@@ -1,6 +1,6 @@
 --- a/lib/web/tiny_mce/tiny_mce_src.js
 +++ b/lib/web/tiny_mce/tiny_mce_src.js
-@@ -1166,11 +1166,8 @@ tinymce.create('static tinymce.util.XHR', {
+@@ -1166,11 +1166,8 @@
         ed.onClick.add(function(ed, e) {
             e = e.target;
 
