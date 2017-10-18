@@ -1,0 +1,16 @@
+--- a/Block/Product/ProductList/Related.php	2017-10-18 16:31:27.648839713 +0200
++++ b/Block/Product/ProductList/Related.php	2017-10-18 16:34:42.703371653 +0200
+@@ -115,6 +115,13 @@
+      */
+     public function getItems()
+     {
++        /**
++         * getIdentities() depends on _itemCollection populated, but it can be empty if the block is hidden
++         * @see https://github.com/magento/magento2/issues/5897
++         */
++        if (is_null($this->_itemCollection)) {
++            $this->_prepareData();
++        }
+         return $this->_itemCollection;
+     }
+ 
