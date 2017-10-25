@@ -1,0 +1,1415 @@
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php b/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php
+index 0783bdb424e..fff770bc446 100644
+--- a/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php
+@@ -6,11 +6,16 @@
+ namespace Magento\CatalogSearch\Model\Indexer;
+ 
+ use Magento\CatalogSearch\Model\Indexer\Fulltext\Action\FullFactory;
++use Magento\CatalogSearch\Model\Indexer\Scope\State;
+ use Magento\CatalogSearch\Model\ResourceModel\Fulltext as FulltextResource;
+-use \Magento\Framework\Search\Request\Config as SearchRequestConfig;
++use Magento\Framework\App\ObjectManager;
++use Magento\Framework\Search\Request\Config as SearchRequestConfig;
+ use Magento\Framework\Search\Request\DimensionFactory;
+ use Magento\Store\Model\StoreManagerInterface;
+ 
++/**
++ * Provide functionality for Fulltext Search indexing
++ */
+ class Fulltext implements \Magento\Framework\Indexer\ActionInterface, \Magento\Framework\Mview\ActionInterface
+ {
+     /**
+@@ -18,34 +23,51 @@ class Fulltext implements \Magento\Framework\Indexer\ActionInterface, \Magento\F
+      */
+     const INDEXER_ID = 'catalogsearch_fulltext';
+ 
+-    /** @var array index structure */
++    /**
++     * @var array index structure
++     */
+     protected $data;
+ 
+     /**
+      * @var IndexerHandlerFactory
+      */
+     private $indexerHandlerFactory;
++
+     /**
+      * @var StoreManagerInterface
+      */
+     private $storeManager;
++
+     /**
+-     * @var DimensionFactory
++     * @var \Magento\Framework\Search\Request\DimensionFactory
+      */
+     private $dimensionFactory;
++
+     /**
+-     * @var Full
++     * @var \Magento\CatalogSearch\Model\Indexer\Fulltext\Action\Full
+      */
+     private $fullAction;
++
+     /**
+      * @var FulltextResource
+      */
+     private $fulltextResource;
++
+     /**
+-     * @var SearchRequestConfig
++     * @var \Magento\Framework\Search\Request\Config
+      */
+     private $searchRequestConfig;
+ 
++    /**
++     * @var IndexSwitcherInterface
++     */
++    private $indexSwitcher;
++
++    /**
++     * @var \Magento\CatalogSearch\Model\Indexer\Scope\State
++     */
++    private $indexScopeState;
++
+     /**
+      * @param FullFactory $fullActionFactory
+      * @param IndexerHandlerFactory $indexerHandlerFactory
+@@ -54,6 +76,8 @@ class Fulltext implements \Magento\Framework\Indexer\ActionInterface, \Magento\F
+      * @param FulltextResource $fulltextResource
+      * @param SearchRequestConfig $searchRequestConfig
+      * @param array $data
++     * @param IndexSwitcherInterface $indexSwitcher
++     * @param Scope\State $indexScopeState
+      */
+     public function __construct(
+         FullFactory $fullActionFactory,
+@@ -62,7 +86,9 @@ class Fulltext implements \Magento\Framework\Indexer\ActionInterface, \Magento\F
+         DimensionFactory $dimensionFactory,
+         FulltextResource $fulltextResource,
+         SearchRequestConfig $searchRequestConfig,
+-        array $data
++        array $data,
++        IndexSwitcherInterface $indexSwitcher = null,
++        State $indexScopeState = null
+     ) {
+         $this->fullAction = $fullActionFactory->create(['data' => $data]);
+         $this->indexerHandlerFactory = $indexerHandlerFactory;
+@@ -71,6 +97,14 @@ class Fulltext implements \Magento\Framework\Indexer\ActionInterface, \Magento\F
+         $this->fulltextResource = $fulltextResource;
+         $this->searchRequestConfig = $searchRequestConfig;
+         $this->data = $data;
++        if (null === $indexSwitcher) {
++            $indexSwitcher = ObjectManager::getInstance()->get(IndexSwitcherInterface::class);
++        }
++        if (null === $indexScopeState) {
++            $indexScopeState = ObjectManager::getInstance()->get(State::class);
++        }
++        $this->indexSwitcher = $indexSwitcher;
++        $this->indexScopeState = $indexScopeState;
+     }
+ 
+     /**
+@@ -106,10 +140,14 @@ class Fulltext implements \Magento\Framework\Indexer\ActionInterface, \Magento\F
+             'data' => $this->data
+         ]);
+         foreach ($storeIds as $storeId) {
+-            $dimension = $this->dimensionFactory->create(['name' => 'scope', 'value' => $storeId]);
+-            $saveHandler->cleanIndex([$dimension]);
+-            $saveHandler->saveIndex([$dimension], $this->fullAction->rebuildStoreIndex($storeId));
++            $dimensions = [$this->dimensionFactory->create(['name' => 'scope', 'value' => $storeId])];
++            $this->indexScopeState->useTemporaryIndex();
++
++            $saveHandler->cleanIndex($dimensions);
++            $saveHandler->saveIndex($dimensions, $this->fullAction->rebuildStoreIndex($storeId));
+ 
++            $this->indexSwitcher->switchIndex($dimensions);
++            $this->indexScopeState->useRegularIndex();
+         }
+         $this->fulltextResource->resetSearchResults();
+         $this->searchRequestConfig->reset();
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php
+index 43c3eb670f4..92eff50cfc1 100644
+--- a/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php
+@@ -12,6 +12,7 @@ use Magento\Framework\DB\Ddl\Table;
+ use Magento\Framework\Search\Request\Dimension;
+ use Magento\Framework\Indexer\IndexStructureInterface;
+ use Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver;
++use Magento\Framework\Search\Request\IndexScopeResolverInterface;
+ 
+ class IndexStructure implements IndexStructureInterface
+ {
+@@ -19,6 +20,7 @@ class IndexStructure implements IndexStructureInterface
+      * @var Resource
+      */
+     private $resource;
++
+     /**
+      * @var IndexScopeResolver
+      */
+@@ -26,11 +28,11 @@ class IndexStructure implements IndexStructureInterface
+ 
+     /**
+      * @param ResourceConnection $resource
+-     * @param IndexScopeResolver $indexScopeResolver
++     * @param IndexScopeResolverInterface $indexScopeResolver
+      */
+     public function __construct(
+         ResourceConnection $resource,
+-        IndexScopeResolver $indexScopeResolver
++        IndexScopeResolverInterface $indexScopeResolver
+     ) {
+         $this->resource = $resource;
+         $this->indexScopeResolver = $indexScopeResolver;
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherInterface.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherInterface.php
+new file mode 100644
+index 00000000000..ba5fb461dde
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherInterface.php
+@@ -0,0 +1,22 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++namespace Magento\CatalogSearch\Model\Indexer;
++
++/**
++ * Provides a functionality to replace main index with its temporary representation
++ */
++interface IndexSwitcherInterface
++{
++    /**
++     * Switch current index with temporary index
++     *
++     * It will drop current index table and rename temporary index table to the current index table.
++     *
++     * @param array $dimensions
++     * @return void
++     */
++    public function switchIndex(array $dimensions);
++}
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherProxy.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherProxy.php
+new file mode 100644
+index 00000000000..2ce093ed99e
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherProxy.php
+@@ -0,0 +1,100 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\CatalogSearch\Model\Indexer;
++
++use Magento\Framework\App\Config\ScopeConfigInterface;
++use Magento\Framework\ObjectManagerInterface;
++use Magento\Store\Model\ScopeInterface;
++
++/**
++ * Proxy for adapter-specific index switcher
++ */
++class IndexSwitcherProxy implements IndexSwitcherInterface
++{
++    /**
++     * Object Manager instance
++     *
++     * @var ObjectManagerInterface
++     */
++    private $objectManager = null;
++
++    /**
++     * Instance name to create
++     *
++     * @var string
++     */
++    private $handlers;
++
++    /**
++     * @var ScopeConfigInterface
++     */
++    private $scopeConfig;
++
++    /**
++     * Configuration path by which current indexer handler stored
++     *
++     * @var string
++     */
++    private $configPath;
++
++    /**
++     * Factory constructor
++     *
++     * @param ObjectManagerInterface $objectManager
++     * @param ScopeConfigInterface $scopeConfig
++     * @param string $configPath
++     * @param string[] $handlers
++     */
++    public function __construct(
++        ObjectManagerInterface $objectManager,
++        ScopeConfigInterface $scopeConfig,
++        $configPath,
++        array $handlers = []
++    ) {
++        $this->objectManager = $objectManager;
++        $this->scopeConfig = $scopeConfig;
++        $this->configPath = $configPath;
++        $this->handlers = $handlers;
++    }
++
++    /**
++     * {@inheritDoc}
++     *
++     * As index switcher is an optional part of the search SPI, it may be not defined by a search engine.
++     * It is especially reasonable for search engines with pre-defined indexes declaration (like old SOLR and Sphinx)
++     * which cannot create temporary indexes on the fly.
++     * That's the reason why this method do nothing for the case
++     * when switcher is not defined for a specific search engine.
++     */
++    public function switchIndex(array $dimensions)
++    {
++        $currentHandler = $this->scopeConfig->getValue($this->configPath, ScopeInterface::SCOPE_STORE);
++        if (!isset($this->handlers[$currentHandler])) {
++            return;
++        }
++        $this->create($currentHandler)->switchIndex($dimensions);
++    }
++
++    /**
++     * Create indexer handler
++     *
++     * @param string $handler
++     * @return IndexSwitcherInterface
++     */
++    private function create($handler)
++    {
++        $indexSwitcher = $this->objectManager->create($this->handlers[$handler]);
++
++        if (!$indexSwitcher instanceof IndexSwitcherInterface) {
++            throw new \InvalidArgumentException(
++                $handler . ' index switcher doesn\'t implement ' . IndexSwitcherInterface::class
++            );
++        }
++
++        return $indexSwitcher;
++    }
++}
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php
+index 2d98f3c06b6..5051b76a41d 100644
+--- a/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php
+@@ -7,13 +7,11 @@ namespace Magento\CatalogSearch\Model\Indexer;
+ 
+ use Magento\Eav\Model\Config;
+ use Magento\Framework\App\ResourceConnection;
+-use Magento\Framework\DB\Adapter\AdapterInterface;
+ use Magento\Framework\Indexer\SaveHandler\IndexerInterface;
+ use Magento\Framework\Indexer\IndexStructureInterface;
+ use Magento\Framework\Search\Request\Dimension;
+ use Magento\Framework\Search\Request\IndexScopeResolverInterface;
+ use Magento\Framework\Indexer\SaveHandler\Batch;
+-use Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver;
+ 
+ class IndexerHandler implements IndexerInterface
+ {
+@@ -62,7 +60,7 @@ class IndexerHandler implements IndexerInterface
+      * @param ResourceConnection $resource
+      * @param Config $eavConfig
+      * @param Batch $batch
+-     * @param \Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver $indexScopeResolver
++     * @param IndexScopeResolverInterface $indexScopeResolver
+      * @param array $data
+      * @param int $batchSize
+      */
+@@ -71,7 +69,7 @@ class IndexerHandler implements IndexerInterface
+         ResourceConnection $resource,
+         Config $eavConfig,
+         Batch $batch,
+-        IndexScopeResolver $indexScopeResolver,
++        IndexScopeResolverInterface $indexScopeResolver,
+         array $data,
+         $batchSize = 100
+     ) {
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexSwitcher.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexSwitcher.php
+new file mode 100644
+index 00000000000..87a7b7110d3
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexSwitcher.php
+@@ -0,0 +1,76 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++namespace Magento\CatalogSearch\Model\Indexer\Scope;
++
++use Magento\CatalogSearch\Model\Indexer\IndexSwitcherInterface;
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\Search\Request\IndexScopeResolverInterface;
++
++/**
++ * Provides a functionality to replace main index with its temporary representation
++ */
++class IndexSwitcher implements IndexSwitcherInterface
++{
++    /**
++     * @var Resource
++     */
++    private $resource;
++
++    /**
++     * @var ScopeProxy
++     */
++    private $resolver;
++
++    /**
++     * @var State
++     */
++    private $state;
++
++    /**
++     * @param ResourceConnection $resource
++     * @param IndexScopeResolverInterface $indexScopeResolver
++     * @param State $state
++     */
++    public function __construct(
++        ResourceConnection $resource,
++        IndexScopeResolverInterface $indexScopeResolver,
++        State $state
++    ) {
++        $this->resource = $resource;
++        $this->resolver = $indexScopeResolver;
++        $this->state = $state;
++    }
++
++    /**
++     * {@inheritdoc}
++     * @throws IndexTableNotExistException
++     */
++    public function switchIndex(array $dimensions)
++    {
++        if (State::USE_TEMPORARY_INDEX === $this->state->getState()) {
++            $index = \Magento\CatalogSearch\Model\Indexer\Fulltext::INDEXER_ID;
++
++            $temporalIndexTable = $this->resolver->resolve($index, $dimensions);
++            if (!$this->resource->getConnection()->isTableExists($temporalIndexTable)) {
++                throw new IndexTableNotExistException(
++                    __(
++                        "Temporary table for index $index doesn't exist,"
++                        . " which is inconsistent with state of scope resolver"
++                    )
++                );
++            }
++
++            $this->state->useRegularIndex();
++            $tableName = $this->resolver->resolve($index, $dimensions);
++            if ($this->resource->getConnection()->isTableExists($tableName)) {
++                $this->resource->getConnection()->dropTable($tableName);
++            }
++
++            $this->resource->getConnection()->renameTable($temporalIndexTable, $tableName);
++            $this->state->useTemporaryIndex();
++        }
++    }
++}
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexTableNotExistException.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexTableNotExistException.php
+new file mode 100644
+index 00000000000..6974f8c278a
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexTableNotExistException.php
+@@ -0,0 +1,18 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\CatalogSearch\Model\Indexer\Scope;
++
++
++use Magento\Framework\Exception\LocalizedException;
++
++/**
++ * Exception which represents situation where temporary index table should be used somewhere,
++ * but it does not exist in a database
++ */
++class IndexTableNotExistException extends LocalizedException
++{
++}
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/ScopeProxy.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/ScopeProxy.php
+new file mode 100644
+index 00000000000..14832af303b
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/ScopeProxy.php
+@@ -0,0 +1,76 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\CatalogSearch\Model\Indexer\Scope;
++
++
++use Magento\Framework\Search\Request\Dimension;
++
++/**
++ * Implementation of IndexScopeResolverInterface which resolves index scope dynamically
++ * depending on current scope state
++ */
++class ScopeProxy implements \Magento\Framework\Search\Request\IndexScopeResolverInterface
++{
++    /**
++     * Object Manager instance
++     *
++     * @var \Magento\Framework\ObjectManagerInterface
++     */
++    private $objectManager;
++
++    /**
++     * @var array
++     */
++    private $states = [];
++
++    /**
++     * @var State
++     */
++    private $scopeState;
++
++    /**
++     * Factory constructor
++     *
++     * @param \Magento\Framework\ObjectManagerInterface $objectManager
++     * @param State $scopeState
++     * @param array $states
++     */
++    public function __construct(
++        \Magento\Framework\ObjectManagerInterface $objectManager,
++        State $scopeState,
++        array $states
++    ) {
++        $this->objectManager = $objectManager;
++        $this->scopeState = $scopeState;
++        $this->states = $states;
++    }
++
++    /**
++     * Creates class instance with specified parameters
++     *
++     * @param string $state
++     * @return \Magento\Framework\Search\Request\IndexScopeResolverInterface
++     * @throws UnknownStateException
++     */
++    private function create($state)
++    {
++        if (!array_key_exists($state, $this->states)) {
++            throw new UnknownStateException(__("Requested resolver for unknown indexer state: $state"));
++        }
++        return $this->objectManager->create($this->states[$state]);
++    }
++
++    /**
++     * @param string $index
++     * @param Dimension[] $dimensions
++     * @return string
++     */
++    public function resolve($index, array $dimensions)
++    {
++        return $this->create($this->scopeState->getState())->resolve($index, $dimensions);
++    }
++}
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/State.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/State.php
+new file mode 100644
+index 00000000000..2bba29ae8d8
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/State.php
+@@ -0,0 +1,65 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\CatalogSearch\Model\Indexer\Scope;
++
++
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\App\ScopeResolverInterface;
++use Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver;
++use Magento\Framework\Search\Request\Dimension;
++use Magento\Framework\Search\Request\IndexScopeResolverInterface;
++
++/**
++ * This class represents state that defines which table should be used during indexation process
++ *
++ * There are two possible states:
++ *   - use_temporary_table
++ *   - use_main_table
++ *
++ * The 'use_main_table' state means that default indexer table should be used.
++ *
++ * The 'use_temporary_table' state is an opposite for 'use_main_table'
++ *   which means that default indexer table should be left unchanged during indexation
++ *   and temporary table should be used instead.
++ *
++ */
++class State
++{
++    const USE_TEMPORARY_INDEX = 'use_temporary_table';
++    const USE_REGULAR_INDEX = 'use_main_table';
++
++    /**
++     * @var string
++     */
++    private $state = self::USE_REGULAR_INDEX;
++
++    /**
++     * Set the state to use temporary Index
++     * @return void
++     */
++    public function useTemporaryIndex()
++    {
++        $this->state = self::USE_TEMPORARY_INDEX;
++    }
++
++    /**
++     * Set the state to use regular Index
++     * @return void
++     */
++    public function useRegularIndex()
++    {
++        $this->state = self::USE_REGULAR_INDEX;
++    }
++
++    /**
++     * @return string
++     */
++    public function getState()
++    {
++        return $this->state;
++    }
++}
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/TemporaryResolver.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/TemporaryResolver.php
+new file mode 100644
+index 00000000000..51037eb637c
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/TemporaryResolver.php
+@@ -0,0 +1,43 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\CatalogSearch\Model\Indexer\Scope;
++
++
++use Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver;
++use Magento\Framework\Search\Request\Dimension;
++
++/**
++ * Resolves name of a temporary table for indexation
++ */
++class TemporaryResolver implements \Magento\Framework\Search\Request\IndexScopeResolverInterface
++{
++    /**
++     * @var IndexScopeResolver
++     */
++    private $indexScopeResolver;
++
++    /**
++     * @inheritDoc
++     */
++    public function __construct(IndexScopeResolver $indexScopeResolver)
++    {
++        $this->indexScopeResolver = $indexScopeResolver;
++    }
++
++    /**
++     * @param string $index
++     * @param Dimension[] $dimensions
++     * @return string
++     */
++    public function resolve($index, array $dimensions)
++    {
++        $tableName = $this->indexScopeResolver->resolve($index, $dimensions);
++        $tableName .= \Magento\Framework\Indexer\Table\StrategyInterface::TMP_SUFFIX;
++
++        return $tableName;
++    }
++}
+diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/UnknownStateException.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/UnknownStateException.php
+new file mode 100644
+index 00000000000..04803ef2748
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/UnknownStateException.php
+@@ -0,0 +1,18 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\CatalogSearch\Model\Indexer\Scope;
++
++
++use Magento\Framework\Exception\LocalizedException;
++
++/**
++ * Exception for situation where used state which is not defined in configuration
++ */
++class UnknownStateException extends LocalizedException
++{
++
++}
+diff --git a/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php
+index 0b62c8588b8..f73f510cce9 100644
+--- a/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php
++++ b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php
+@@ -8,7 +8,13 @@ namespace Magento\CatalogSearch\Test\Unit\Model\Indexer;
+ use Magento\CatalogSearch\Model\ResourceModel\Fulltext as FulltextResource;
+ use Magento\Framework\Search\Request\Config as SearchRequestConfig;
+ use Magento\Framework\Search\Request\DimensionFactory;
++use Magento\Framework\Search\Request\Dimension;
++use Magento\Framework\TestFramework\Unit\Helper\ObjectManager as ObjectManagerHelper;
++use \Magento\CatalogSearch\Model\Indexer\Fulltext\IndexSwitcher;
+ 
++/**
++ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
++ */
+ class FulltextTest extends \PHPUnit_Framework_TestCase
+ {
+     /**
+@@ -26,11 +32,6 @@ class FulltextTest extends \PHPUnit_Framework_TestCase
+      */
+     protected $storeManager;
+ 
+-    /**
+-     * @var \Magento\Framework\Search\Request\Dimension|\PHPUnit_Framework_MockObject_MockObject
+-     */
+-    protected $dimension;
+-
+     /**
+      * @var \Magento\CatalogSearch\Model\Indexer\IndexerHandler|\PHPUnit_Framework_MockObject_MockObject
+      */
+@@ -47,8 +48,15 @@ class FulltextTest extends \PHPUnit_Framework_TestCase
+     protected $searchRequestConfig;
+ 
+     /**
+-     *
++     * @var \Magento\Framework\Search\Request\DimensionFactory|\PHPUnit_Framework_MockObject_MockObject
+      */
++    private $dimensionFactory;
++
++    /**
++     * @var \Magento\CatalogSearch\Model\Indexer\Scope\IndexSwitcher|\PHPUnit_Framework_MockObject_MockObject
++     */
++    private $indexSwitcher;
++
+     protected function setUp()
+     {
+         $this->fullAction = $this->getClassMock('Magento\CatalogSearch\Model\Indexer\Fulltext\Action\Full');
+@@ -80,27 +88,29 @@ class FulltextTest extends \PHPUnit_Framework_TestCase
+             []
+         );
+ 
+-        $this->dimension = $this->getClassMock('\Magento\Framework\Search\Request\Dimension');
+-        $dimensionFactory = $this->getMock(
+-            '\Magento\Framework\Search\Request\DimensionFactory',
+-            ['create'],
+-            [],
+-            '',
+-            false
+-        );
+-        $dimensionFactory->expects($this->any())->method('create')->willReturn($this->dimension);
++        $this->dimensionFactory = $this->getMock(DimensionFactory::class, ['create'], [], '', false);
+ 
+         $this->fulltextResource = $this->getClassMock('\Magento\CatalogSearch\Model\ResourceModel\Fulltext');
+         $this->searchRequestConfig = $this->getClassMock('Magento\Framework\Search\Request\Config');
+ 
+-        $this->model = new \Magento\CatalogSearch\Model\Indexer\Fulltext(
+-            $fullActionFactory,
+-            $indexerHandlerFactory,
+-            $this->storeManager,
+-            $dimensionFactory,
+-            $this->fulltextResource,
+-            $this->searchRequestConfig,
+-            []
++        $this->indexSwitcher = $this->getMockBuilder(\Magento\CatalogSearch\Model\Indexer\Scope\IndexSwitcher::class)
++            ->disableOriginalConstructor()
++            ->setMethods(['switchIndex'])
++            ->getMock();
++
++        $objectManagerHelper = new ObjectManagerHelper($this);
++        $this->model = $objectManagerHelper->getObject(
++            \Magento\CatalogSearch\Model\Indexer\Fulltext::class,
++            [
++                'fullActionFactory' => $fullActionFactory,
++                'indexerHandlerFactory' => $indexerHandlerFactory,
++                'storeManager' => $this->storeManager,
++                'dimensionFactory' => $this->dimensionFactory,
++                'fulltextResource' => $this->fulltextResource,
++                'searchRequestConfig' => $this->searchRequestConfig,
++                'data' => [],
++                'indexSwitcher' => $this->indexSwitcher,
++            ]
+         );
+     }
+ 
+@@ -131,13 +141,38 @@ class FulltextTest extends \PHPUnit_Framework_TestCase
+     public function testExecuteFull()
+     {
+         $stores = [0 => 'Store 1', 1 => 'Store 2'];
+-        $indexData = new \ArrayObject([]);
++        $indexData = new \ArrayObject([new \ArrayObject([]), new \ArrayObject([])]);
+         $this->storeManager->expects($this->once())->method('getStores')->willReturn($stores);
+-        $this->saveHandler->expects($this->exactly(count($stores)))->method('cleanIndex');
+-        $this->saveHandler->expects($this->exactly(2))->method('saveIndex');
++
++        $dimensionScope1 = $this->getMock(Dimension::class, [], ['scope', '1']);
++        $dimensionScope2 = $this->getMock(Dimension::class, [], ['scope', '2']);
++
++        $this->dimensionFactory->expects($this->any())->method('create')->willReturnOnConsecutiveCalls(
++            $dimensionScope1,
++            $dimensionScope2
++        );
++        $this->indexSwitcher->expects($this->exactly(2))->method('switchIndex')
++            ->withConsecutive(
++                [$this->equalTo([$dimensionScope1])],
++                [$this->equalTo([$dimensionScope2])]
++            );
++
++        $this->saveHandler->expects($this->exactly(count($stores)))->method('cleanIndex')
++            ->withConsecutive(
++                [$this->equalTo([$dimensionScope1])],
++                [$this->equalTo([$dimensionScope2])]
++            );
++
++        $this->saveHandler->expects($this->exactly(2))->method('saveIndex')
++            ->withConsecutive(
++                [$this->equalTo([$dimensionScope1]), $this->equalTo($indexData)],
++                [$this->equalTo([$dimensionScope2]), $this->equalTo($indexData)]
++            );
+         $this->fullAction->expects($this->exactly(2))
+             ->method('rebuildStoreIndex')
+-            ->willReturn(new \ArrayObject([$indexData, $indexData]));
++            ->withConsecutive([0], [1])
++            ->willReturn($indexData);
++
+         $this->fulltextResource->expects($this->once())->method('resetSearchResults');
+         $this->searchRequestConfig->expects($this->once())->method('reset');
+ 
+diff --git a/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php
+new file mode 100644
+index 00000000000..31bec5906ae
+--- /dev/null
++++ b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php
+@@ -0,0 +1,212 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++namespace Magento\CatalogSearch\Test\Unit\Model\Indexer\Scope;
++
++use Magento\CatalogSearch\Model\Indexer\Scope\IndexSwitcher;
++use Magento\CatalogSearch\Model\Indexer\Scope\State;
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver;
++use Magento\Framework\Indexer\IndexStructureInterface;
++use Magento\Framework\Search\Request\Dimension;
++use Magento\CatalogSearch\Model\Indexer\Fulltext as FulltextIndexer;
++use Magento\Framework\TestFramework\Unit\Helper\ObjectManager as ObjectManagerHelper;
++
++class IndexSwitcherTest extends \PHPUnit_Framework_TestCase
++{
++    /**
++     * @var \Magento\Framework\DB\Adapter\AdapterInterface|\PHPUnit_Framework_MockObject_MockObject
++     */
++    private $connection;
++
++    /**
++     * @var \Magento\Framework\Search\Request\IndexScopeResolverInterface|\PHPUnit_Framework_MockObject_MockObject
++     */
++    private $indexScopeResolver;
++
++    /**
++     * @var State|\PHPUnit_Framework_MockObject_MockObject
++     */
++    private $scopeState;
++
++    /**
++     * @var IndexSwitcher
++     */
++    private $indexSwitcher;
++
++    /**
++     * @var ResourceConnection|\PHPUnit_Framework_MockObject_MockObject
++     */
++    private $resource;
++
++    protected function setUp()
++    {
++        $this->resource = $this->getMockBuilder(ResourceConnection::class)
++            ->setMethods(['getConnection'])
++            ->disableOriginalConstructor()
++            ->getMock();
++        $this->connection = $this->getMockBuilder(\Magento\Framework\DB\Adapter\AdapterInterface::class)
++            ->setMethods(['isTableExists', 'dropTable', 'renameTable'])
++            ->getMockForAbstractClass();
++        $this->resource->expects($this->any())
++            ->method('getConnection')
++            ->willReturn($this->connection);
++        $this->indexScopeResolver = $this->getMockBuilder(
++            \Magento\Framework\Search\Request\IndexScopeResolverInterface::class
++        )
++            ->setMethods(['resolve'])
++            ->getMockForAbstractClass();
++        $this->scopeState = $this->getMockBuilder(State::class)
++            ->setMethods(['getState', 'useRegularIndex', 'useTemporaryIndex'])
++            ->disableOriginalConstructor()
++            ->getMock();
++
++        $objectManagerHelper = new ObjectManagerHelper($this);
++        $this->indexSwitcher = $objectManagerHelper->getObject(
++            \Magento\CatalogSearch\Model\Indexer\Scope\IndexSwitcher::class,
++            [
++                'resource' => $this->resource,
++                'indexScopeResolver' => $this->indexScopeResolver,
++                'state' => $this->scopeState,
++            ]
++        );
++    }
++
++    public function testSwitchRegularIndex()
++    {
++        $dimensions = [$this->getMockBuilder(Dimension::class)->setConstructorArgs(['scope', '1'])];
++
++        $this->scopeState->expects($this->once())
++            ->method('getState')
++            ->willReturn(State::USE_REGULAR_INDEX);
++
++        $this->indexScopeResolver->expects($this->never())->method('resolve');
++        $this->connection->expects($this->never())->method('renameTable');
++
++        $this->indexSwitcher->switchIndex($dimensions);
++    }
++
++    public function testSwitchIndexWithUnknownState()
++    {
++        $dimensions = [$this->getMockBuilder(Dimension::class)->setConstructorArgs(['scope', '1'])];
++
++        $this->scopeState->expects($this->once())
++            ->method('getState')
++            ->willReturn('unknown_state');
++
++        $this->indexScopeResolver->expects($this->never())->method('resolve');
++        $this->connection->expects($this->never())->method('renameTable');
++
++        $this->indexSwitcher->switchIndex($dimensions);
++    }
++
++    public function testSwitchTemporaryIndexWhenRegularIndexExist()
++    {
++        $dimensions = [$this->getMockBuilder(Dimension::class)->setConstructorArgs(['scope', '1'])];
++
++        $this->scopeState->expects($this->once())
++            ->method('getState')
++            ->willReturn(State::USE_TEMPORARY_INDEX);
++
++        $this->scopeState->expects($this->at(1))->method('useRegularIndex');
++        $this->scopeState->expects($this->at(2))->method('useTemporaryIndex');
++
++        $this->indexScopeResolver->expects($this->exactly(2))->method('resolve')
++            ->withConsecutive(
++                [$this->equalTo(FulltextIndexer::INDEXER_ID), $this->equalTo($dimensions)],
++                [$this->equalTo(FulltextIndexer::INDEXER_ID), $this->equalTo($dimensions)]
++            )
++            ->willReturnOnConsecutiveCalls(
++                'catalogsearch_fulltext_scope1_tmp1',
++                'catalogsearch_fulltext_scope1'
++            );
++
++        $this->connection->expects($this->exactly(2))->method('isTableExists')
++            ->withConsecutive(
++                [$this->equalTo('catalogsearch_fulltext_scope1_tmp1'), $this->equalTo(null)],
++                [$this->equalTo('catalogsearch_fulltext_scope1'), $this->equalTo(null)]
++            )
++            ->willReturnOnConsecutiveCalls(
++                true,
++                true
++            );
++
++        $this->connection->expects($this->once())->method('dropTable')->with('catalogsearch_fulltext_scope1', null);
++        $this->connection->expects($this->once())
++            ->method('renameTable')
++            ->with('catalogsearch_fulltext_scope1_tmp1', 'catalogsearch_fulltext_scope1');
++
++        $this->indexSwitcher->switchIndex($dimensions);
++    }
++
++    public function testSwitchTemporaryIndexWhenRegularIndexNotExist()
++    {
++        $dimensions = [$this->getMockBuilder(Dimension::class)->setConstructorArgs(['scope', '1'])];
++
++        $this->scopeState->expects($this->once())
++            ->method('getState')
++            ->willReturn(State::USE_TEMPORARY_INDEX);
++
++        $this->scopeState->expects($this->at(1))->method('useRegularIndex');
++        $this->scopeState->expects($this->at(2))->method('useTemporaryIndex');
++
++        $this->indexScopeResolver->expects($this->exactly(2))->method('resolve')
++            ->withConsecutive(
++                [$this->equalTo(FulltextIndexer::INDEXER_ID), $this->equalTo($dimensions)],
++                [$this->equalTo(FulltextIndexer::INDEXER_ID), $this->equalTo($dimensions)]
++            )
++            ->willReturnOnConsecutiveCalls(
++                'catalogsearch_fulltext_scope1_tmp1',
++                'catalogsearch_fulltext_scope1'
++            );
++
++        $this->connection->expects($this->exactly(2))->method('isTableExists')
++            ->withConsecutive(
++                [$this->equalTo('catalogsearch_fulltext_scope1_tmp1'), $this->equalTo(null)],
++                [$this->equalTo('catalogsearch_fulltext_scope1'), $this->equalTo(null)]
++            )
++            ->willReturnOnConsecutiveCalls(
++                true,
++                false
++            );
++
++        $this->connection->expects($this->never())->method('dropTable')->with('catalogsearch_fulltext_scope1', null);
++        $this->connection->expects($this->once())
++            ->method('renameTable')
++            ->with('catalogsearch_fulltext_scope1_tmp1', 'catalogsearch_fulltext_scope1');
++
++        $this->indexSwitcher->switchIndex($dimensions);
++    }
++
++    /**
++     * @expectedException \Magento\CatalogSearch\Model\Indexer\Scope\IndexTableNotExistException
++     * @expectedExceptionMessage Temporary table for index catalogsearch_fulltext doesn't exist
++     */
++    public function testSwitchWhenTemporaryIndexNotExist()
++    {
++        $dimensions = [$this->getMockBuilder(Dimension::class)->setConstructorArgs(['scope', '1'])];
++
++        $this->scopeState->expects($this->once())
++            ->method('getState')
++            ->willReturn(State::USE_TEMPORARY_INDEX);
++
++        $this->scopeState->expects($this->never())->method('useRegularIndex');
++        $this->scopeState->expects($this->never())->method('useTemporaryIndex');
++
++        $this->indexScopeResolver->expects($this->once())->method('resolve')
++            ->with(FulltextIndexer::INDEXER_ID, $dimensions)
++            ->willReturn('catalogsearch_fulltext_scope1_tmp1');
++
++        $this->connection->expects($this->once())
++            ->method('isTableExists')
++            ->with('catalogsearch_fulltext_scope1_tmp1', null)
++            ->willReturn(false);
++
++        $this->connection->expects($this->never())->method('dropTable')->with('catalogsearch_fulltext_scope1', null);
++        $this->connection->expects($this->never())->method('renameTable');
++
++        $this->indexSwitcher->switchIndex($dimensions);
++    }
++}
+diff --git a/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php b/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
+index b20154fa81c..0b689cdc208 100644
+--- a/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
++++ b/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
+@@ -45,9 +45,9 @@ class IndexStructureTest extends \PHPUnit_Framework_TestCase
+         $this->resource->expects($this->atLeastOnce())
+             ->method('getConnection')
+             ->willReturn($this->connection);
+-        $this->indexScopeResolver = $this->getMockBuilder('\Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver')
+-            ->setMethods(['resolve'])
+-            ->disableOriginalConstructor()
++        $this->indexScopeResolver = $this->getMockBuilder(
++            \Magento\Framework\Search\Request\IndexScopeResolverInterface::class
++        )->setMethods(['resolve'])
+             ->getMock();
+ 
+         $objectManager = new ObjectManager($this);
+@@ -61,11 +61,6 @@ class IndexStructureTest extends \PHPUnit_Framework_TestCase
+         );
+     }
+ 
+-    /**
+-     * @param string $table
+-     * @param array $dimensions
+-     * @param bool $isTableExist
+-     */
+     public function testDelete()
+     {
+         $index = 'index_name';
+diff --git a/app/code/Magento/CatalogSearch/etc/di.xml b/app/code/Magento/CatalogSearch/etc/di.xml
+index 25993adf353..dc104cc7816 100644
+--- a/app/code/Magento/CatalogSearch/etc/di.xml
++++ b/app/code/Magento/CatalogSearch/etc/di.xml
+@@ -12,6 +12,7 @@
+     <preference for="Magento\Framework\Search\Dynamic\DataProviderInterface" type="Magento\CatalogSearch\Model\Adapter\Mysql\Dynamic\DataProvider" />
+     <preference for="Magento\Framework\Search\Adapter\OptionsInterface" type="Magento\CatalogSearch\Model\Adapter\Options" />
+     <preference for="Magento\CatalogSearch\Model\Search\FilterMapper\FilterStrategyInterface" type="Magento\CatalogSearch\Model\Search\FilterMapper\FilterContext"/>
++    <preference for="\Magento\CatalogSearch\Model\Indexer\IndexSwitcherInterface" type="\Magento\CatalogSearch\Model\Indexer\IndexSwitcherProxy"/>
+     <type name="Magento\CatalogSearch\Model\Indexer\IndexerHandlerFactory">
+         <arguments>
+             <argument name="configPath" xsi:type="const">Magento\CatalogSearch\Model\ResourceModel\EngineInterface::CONFIG_ENGINE_PATH</argument>
+@@ -20,6 +21,14 @@
+             </argument>
+         </arguments>
+     </type>
++    <type name="Magento\CatalogSearch\Model\Indexer\IndexSwitcherProxy">
++        <arguments>
++            <argument name="configPath" xsi:type="const">Magento\CatalogSearch\Model\ResourceModel\EngineInterface::CONFIG_ENGINE_PATH</argument>
++            <argument name="handlers" xsi:type="array">
++                <item name="mysql" xsi:type="string">\Magento\CatalogSearch\Model\Indexer\Scope\IndexSwitcher</item>
++            </argument>
++        </arguments>
++    </type>
+     <type name="Magento\CatalogSearch\Model\Indexer\IndexStructureFactory">
+         <arguments>
+             <argument name="configPath" xsi:type="const">Magento\CatalogSearch\Model\ResourceModel\EngineInterface::CONFIG_ENGINE_PATH</argument>
+@@ -246,4 +255,27 @@
+             </argument>
+         </arguments>
+     </type>
++    <type name="\Magento\CatalogSearch\Model\Indexer\IndexerHandler">
++        <arguments>
++            <argument name="indexScopeResolver" xsi:type="object">\Magento\CatalogSearch\Model\Indexer\Scope\ScopeProxy</argument>
++        </arguments>
++    </type>
++    <type name="\Magento\CatalogSearch\Model\Indexer\IndexStructure">
++        <arguments>
++            <argument name="indexScopeResolver" xsi:type="object">\Magento\CatalogSearch\Model\Indexer\Scope\ScopeProxy</argument>
++        </arguments>
++    </type>
++    <type name="\Magento\CatalogSearch\Model\Indexer\Scope\IndexSwitcher">
++        <arguments>
++            <argument name="indexScopeResolver" xsi:type="object">\Magento\CatalogSearch\Model\Indexer\Scope\ScopeProxy</argument>
++        </arguments>
++    </type>
++    <type name="\Magento\CatalogSearch\Model\Indexer\Scope\ScopeProxy">
++        <arguments>
++            <argument name="states" xsi:type="array">
++                <item name="use_temporary_table" xsi:type="string">\Magento\CatalogSearch\Model\Indexer\Scope\TemporaryResolver</item>
++                <item name="use_main_table" xsi:type="string">\Magento\Framework\Indexer\ScopeResolver\IndexScopeResolver</item>
++            </argument>
++        </arguments>
++    </type>
+ </config>
+diff --git a/dev/tests/integration/testsuite/Magento/CatalogSearch/Model/Indexer/IndexSwitcherMock.php b/dev/tests/integration/testsuite/Magento/CatalogSearch/Model/Indexer/IndexSwitcherMock.php
+new file mode 100644
+index 00000000000..955ccce3bb5
+--- /dev/null
++++ b/dev/tests/integration/testsuite/Magento/CatalogSearch/Model/Indexer/IndexSwitcherMock.php
+@@ -0,0 +1,54 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\CatalogSearch\Model\Indexer;
++
++
++use Magento\CatalogSearch\Model\Indexer\IndexSwitcherInterface;
++
++/**
++ * The proxy class around index switcher which allows to ensure that the IndexSwitcher was actually used
++ */
++class IndexSwitcherMock extends \PHPUnit_Framework_Assert implements IndexSwitcherInterface
++{
++    private $isSwitched = false;
++
++    /**
++     * @var \Magento\CatalogSearch\Model\Indexer\IndexSwitcherInterface
++     */
++    private $indexSwitcher;
++
++    /**
++     * @param \Magento\CatalogSearch\Model\Indexer\IndexSwitcherInterface $indexSwitcher
++     */
++    public function __construct(
++        IndexSwitcherInterface $indexSwitcher
++    ) {
++        $this->indexSwitcher = $indexSwitcher;
++    }
++
++    /**
++     * Switch current index with temporary index
++     *
++     * It will drop current index table and rename temporary index table to the current index table.
++     *
++     * @param array $dimensions
++     * @return void
++     */
++    public function switchIndex(array $dimensions)
++    {
++        $this->isSwitched |= true;
++        $this->indexSwitcher->switchIndex($dimensions);
++    }
++
++    /**
++     * @return bool
++     */
++    public function isSwitched()
++    {
++        return (bool) $this->isSwitched;
++    }
++}
+diff --git a/dev/tests/integration/testsuite/Magento/CatalogSearch/Model/Indexer/SwitcherUsedInFulltextTest.php b/dev/tests/integration/testsuite/Magento/CatalogSearch/Model/Indexer/SwitcherUsedInFulltextTest.php
+new file mode 100644
+index 00000000000..afcfef5fc4c
+--- /dev/null
++++ b/dev/tests/integration/testsuite/Magento/CatalogSearch/Model/Indexer/SwitcherUsedInFulltextTest.php
+@@ -0,0 +1,214 @@
++<?php
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++namespace Magento\CatalogSearch\Model\Indexer;
++
++use Magento\Catalog\Model\Product;
++use Magento\CatalogSearch\Model\Indexer\Fulltext;
++use Magento\CatalogSearch\Model\Indexer\IndexSwitcherMock;
++use Magento\CatalogSearch\Model\ResourceModel\Fulltext\Collection;
++use Magento\TestFramework\Helper\Bootstrap;
++
++/**
++ * @magentoDbIsolation disabled
++ * @magentoDataFixture Magento/CatalogSearch/_files/indexer_fulltext.php
++ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
++ */
++class SwitcherUsedInFulltextTest extends \PHPUnit_Framework_TestCase
++{
++    /**
++     * @var IndexSwitcherInterface
++     */
++    private $indexSwitcher;
++
++    /**
++     * @var \Magento\Framework\Indexer\IndexerInterface
++     */
++    protected $indexer;
++
++    /**
++     * @var \Magento\CatalogSearch\Model\ResourceModel\Engine
++     */
++    protected $engine;
++
++    /**
++     * @var \Magento\CatalogSearch\Model\ResourceModel\Fulltext
++     */
++    protected $resourceFulltext;
++
++    /**
++     * @var \Magento\CatalogSearch\Model\Fulltext
++     */
++    protected $fulltext;
++
++    /**
++     * @var \Magento\Search\Model\QueryFactory
++     */
++    protected $queryFactory;
++
++    /**
++     * @var \Magento\Catalog\Model\Product
++     */
++    protected $productApple;
++
++    /**
++     * @var \Magento\Catalog\Model\Product
++     */
++    protected $productBanana;
++
++    /**
++     * @var \Magento\Catalog\Model\Product
++     */
++    protected $productOrange;
++
++    /**
++     * @var \Magento\Catalog\Model\Product
++     */
++    protected $productPapaya;
++
++    /**
++     * @var \Magento\Catalog\Model\Product
++     */
++    protected $productCherry;
++
++    /**
++     * @var  \Magento\Framework\Search\Request\Dimension
++     */
++    protected $dimension;
++
++    protected function setUp()
++    {
++        $objectManager = Bootstrap::getObjectManager();
++
++        $objectManager->configure(
++            [
++                ltrim(Fulltext::class, '\\') => [
++                    'arguments' => [
++                        'indexSwitcher' => [
++                            'instance' => ltrim(IndexSwitcherMock::class, '\\'),
++                        ],
++                    ],
++                ],
++            ]
++        );
++
++        /** @var \Magento\Framework\Indexer\IndexerInterface indexer */
++        $this->indexer = $objectManager->create(
++            \Magento\Indexer\Model\Indexer::class
++        );
++        $this->indexer->load('catalogsearch_fulltext');
++
++        $this->engine = $objectManager->get(
++            \Magento\CatalogSearch\Model\ResourceModel\Engine::class
++        );
++
++        $this->resourceFulltext = $objectManager->get(
++            \Magento\CatalogSearch\Model\ResourceModel\Fulltext::class
++        );
++
++        $this->queryFactory = $objectManager->get(
++            \Magento\Search\Model\QueryFactory::class
++        );
++
++        $this->dimension = $objectManager->create(
++            \Magento\Framework\Search\Request\Dimension::class,
++            ['name' => 'scope', 'value' => '1']
++        );
++
++        $this->indexSwitcher = Bootstrap::getObjectManager()->get(
++            IndexSwitcherMock::class
++        );
++
++        $this->productApple = $this->getProductBySku('fulltext-1');
++        $this->productBanana = $this->getProductBySku('fulltext-2');
++        $this->productOrange = $this->getProductBySku('fulltext-3');
++        $this->productPapaya = $this->getProductBySku('fulltext-4');
++        $this->productCherry = $this->getProductBySku('fulltext-5');
++    }
++
++    /**
++     * @magentoAppIsolation enabled
++     */
++    public function testReindexAll()
++    {
++        $this->indexer->reindexAll();
++
++        /** @var IndexSwitcherMock $indexSwitcher */
++        $indexSwitcher = Bootstrap::getObjectManager()->get(
++            IndexSwitcherMock::class
++        );
++        $this->assertTrue($indexSwitcher->isSwitched());
++    }
++
++    /**
++     * @magentoAppIsolation enabled
++     */
++    public function testReindexList()
++    {
++        $this->indexer->reindexList([$this->productApple->getId(), $this->productBanana->getId()]);
++
++        /** @var IndexSwitcherMock $indexSwitcher */
++        $indexSwitcher = Bootstrap::getObjectManager()->get(
++            IndexSwitcherMock::class
++        );
++        $this->assertFalse($indexSwitcher->isSwitched());
++    }
++
++    /**
++     * @magentoAppIsolation enabled
++     */
++    public function testReindexRow()
++    {
++        $this->indexer->reindexRow($this->productPapaya->getId());
++
++        /** @var IndexSwitcherMock $indexSwitcher */
++        $indexSwitcher = Bootstrap::getObjectManager()->get(
++            IndexSwitcherMock::class
++        );
++        $this->assertFalse($indexSwitcher->isSwitched());
++    }
++
++    /**
++     * Search the text and return result collection
++     *
++     * @param string $text
++     * @return Product[]
++     */
++    protected function search($text)
++    {
++        $this->resourceFulltext->resetSearchResults();
++        $query = $this->queryFactory->get();
++        $query->unsetData();
++        $query->setQueryText($text);
++        $query->saveIncrementalPopularity();
++        $products = [];
++        $collection = Bootstrap::getObjectManager()->create(
++            Collection::class,
++            [
++                'searchRequestName' => 'quick_search_container'
++            ]
++        );
++        $collection->addSearchFilter($text);
++        foreach ($collection as $product) {
++            $products[] = $product;
++        }
++        return $products;
++    }
++
++    /**
++     * Return product by SKU
++     *
++     * @param string $sku
++     * @return Product
++     */
++    protected function getProductBySku($sku)
++    {
++        /** @var Product $product */
++        $product = Bootstrap::getObjectManager()->get(
++            \Magento\Catalog\Model\Product::class
++        );
++        return $product->loadByAttribute('sku', $sku);
++    }
++}
+diff --git a/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php b/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php
+index 20365b399fc..77f2c7a1b64 100644
+--- a/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php
++++ b/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php
+@@ -52,6 +52,7 @@ class IndexScopeResolver implements IndexScopeResolverInterface
+                     $tableNameParts[] = $dimension->getName() . $dimension->getValue();
+             }
+         }
++
+         return $this->resource->getTableName(implode('_', $tableNameParts));
+     }
+ 
+@@ -63,10 +64,12 @@ class IndexScopeResolver implements IndexScopeResolverInterface
+      */
+     private function getScopeId($dimension)
+     {
+-        if (is_numeric($dimension->getValue())) {
+-            return $dimension->getValue();
+-        } else {
+-            return $this->scopeResolver->getScope($dimension->getValue())->getId();
++        $scopeId = $dimension->getValue();
++
++        if (!is_numeric($scopeId)) {
++            $scopeId = $this->scopeResolver->getScope($scopeId)->getId();
+         }
++
++        return $scopeId;
+     }
+ }
