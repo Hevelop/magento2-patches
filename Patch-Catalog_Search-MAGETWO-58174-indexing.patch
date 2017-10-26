@@ -1,7 +1,7 @@
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php b/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php
+diff --git a/Model/Indexer/Fulltext.php b/Model/Indexer/Fulltext.php
 index 0783bdb424e..fff770bc446 100644
---- a/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/Fulltext.php
+--- a/Model/Indexer/Fulltext.php
++++ b/Model/Indexer/Fulltext.php
 @@ -6,11 +6,16 @@
  namespace Magento\CatalogSearch\Model\Indexer;
  
@@ -129,10 +129,10 @@ index 0783bdb424e..fff770bc446 100644
          }
          $this->fulltextResource->resetSearchResults();
          $this->searchRequestConfig->reset();
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php
+diff --git a/Model/Indexer/IndexStructure.php b/Model/Indexer/IndexStructure.php
 index 43c3eb670f4..92eff50cfc1 100644
---- a/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexStructure.php
+--- a/Model/Indexer/IndexStructure.php
++++ b/Model/Indexer/IndexStructure.php
 @@ -12,6 +12,7 @@ use Magento\Framework\DB\Ddl\Table;
  use Magento\Framework\Search\Request\Dimension;
  use Magento\Framework\Indexer\IndexStructureInterface;
@@ -163,11 +163,11 @@ index 43c3eb670f4..92eff50cfc1 100644
      ) {
          $this->resource = $resource;
          $this->indexScopeResolver = $indexScopeResolver;
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherInterface.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherInterface.php
+diff --git a/Model/Indexer/IndexSwitcherInterface.php b/Model/Indexer/IndexSwitcherInterface.php
 new file mode 100644
 index 00000000000..ba5fb461dde
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherInterface.php
++++ b/Model/Indexer/IndexSwitcherInterface.php
 @@ -0,0 +1,22 @@
 +<?php
 +/**
@@ -191,11 +191,11 @@ index 00000000000..ba5fb461dde
 +     */
 +    public function switchIndex(array $dimensions);
 +}
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherProxy.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherProxy.php
+diff --git a/Model/Indexer/IndexSwitcherProxy.php b/Model/Indexer/IndexSwitcherProxy.php
 new file mode 100644
 index 00000000000..2ce093ed99e
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexSwitcherProxy.php
++++ b/Model/Indexer/IndexSwitcherProxy.php
 @@ -0,0 +1,100 @@
 +<?php
 +/**
@@ -297,10 +297,10 @@ index 00000000000..2ce093ed99e
 +        return $indexSwitcher;
 +    }
 +}
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php b/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php
+diff --git a/Model/Indexer/IndexerHandler.php b/Model/Indexer/IndexerHandler.php
 index 2d98f3c06b6..5051b76a41d 100644
---- a/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/IndexerHandler.php
+--- a/Model/Indexer/IndexerHandler.php
++++ b/Model/Indexer/IndexerHandler.php
 @@ -7,13 +7,11 @@ namespace Magento\CatalogSearch\Model\Indexer;
  
  use Magento\Eav\Model\Config;
@@ -333,11 +333,11 @@ index 2d98f3c06b6..5051b76a41d 100644
          array $data,
          $batchSize = 100
      ) {
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexSwitcher.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexSwitcher.php
+diff --git a/Model/Indexer/Scope/IndexSwitcher.php b/Model/Indexer/Scope/IndexSwitcher.php
 new file mode 100644
 index 00000000000..87a7b7110d3
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexSwitcher.php
++++ b/Model/Indexer/Scope/IndexSwitcher.php
 @@ -0,0 +1,76 @@
 +<?php
 +/**
@@ -415,11 +415,11 @@ index 00000000000..87a7b7110d3
 +        }
 +    }
 +}
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexTableNotExistException.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexTableNotExistException.php
+diff --git a/Model/Indexer/Scope/IndexTableNotExistException.php b/Model/Indexer/Scope/IndexTableNotExistException.php
 new file mode 100644
 index 00000000000..6974f8c278a
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/IndexTableNotExistException.php
++++ b/Model/Indexer/Scope/IndexTableNotExistException.php
 @@ -0,0 +1,18 @@
 +<?php
 +/**
@@ -439,11 +439,11 @@ index 00000000000..6974f8c278a
 +class IndexTableNotExistException extends LocalizedException
 +{
 +}
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/ScopeProxy.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/ScopeProxy.php
+diff --git a/Model/Indexer/Scope/ScopeProxy.php b/Model/Indexer/Scope/ScopeProxy.php
 new file mode 100644
 index 00000000000..14832af303b
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/ScopeProxy.php
++++ b/Model/Indexer/Scope/ScopeProxy.php
 @@ -0,0 +1,76 @@
 +<?php
 +/**
@@ -521,11 +521,11 @@ index 00000000000..14832af303b
 +        return $this->create($this->scopeState->getState())->resolve($index, $dimensions);
 +    }
 +}
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/State.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/State.php
+diff --git a/Model/Indexer/Scope/State.php b/Model/Indexer/Scope/State.php
 new file mode 100644
 index 00000000000..2bba29ae8d8
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/State.php
++++ b/Model/Indexer/Scope/State.php
 @@ -0,0 +1,65 @@
 +<?php
 +/**
@@ -592,11 +592,11 @@ index 00000000000..2bba29ae8d8
 +        return $this->state;
 +    }
 +}
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/TemporaryResolver.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/TemporaryResolver.php
+diff --git a/Model/Indexer/Scope/TemporaryResolver.php b/Model/Indexer/Scope/TemporaryResolver.php
 new file mode 100644
 index 00000000000..51037eb637c
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/TemporaryResolver.php
++++ b/Model/Indexer/Scope/TemporaryResolver.php
 @@ -0,0 +1,43 @@
 +<?php
 +/**
@@ -641,11 +641,11 @@ index 00000000000..51037eb637c
 +        return $tableName;
 +    }
 +}
-diff --git a/app/code/Magento/CatalogSearch/Model/Indexer/Scope/UnknownStateException.php b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/UnknownStateException.php
+diff --git a/Model/Indexer/Scope/UnknownStateException.php b/Model/Indexer/Scope/UnknownStateException.php
 new file mode 100644
 index 00000000000..04803ef2748
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Model/Indexer/Scope/UnknownStateException.php
++++ b/Model/Indexer/Scope/UnknownStateException.php
 @@ -0,0 +1,18 @@
 +<?php
 +/**
@@ -665,10 +665,10 @@ index 00000000000..04803ef2748
 +{
 +
 +}
-diff --git a/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php
+diff --git a/Test/Unit/Model/Indexer/FulltextTest.php b/Test/Unit/Model/Indexer/FulltextTest.php
 index 0b62c8588b8..f73f510cce9 100644
---- a/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php
-+++ b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/FulltextTest.php
+--- a/Test/Unit/Model/Indexer/FulltextTest.php
++++ b/Test/Unit/Model/Indexer/FulltextTest.php
 @@ -8,7 +8,13 @@ namespace Magento\CatalogSearch\Test\Unit\Model\Indexer;
  use Magento\CatalogSearch\Model\ResourceModel\Fulltext as FulltextResource;
  use Magento\Framework\Search\Request\Config as SearchRequestConfig;
@@ -802,11 +802,11 @@ index 0b62c8588b8..f73f510cce9 100644
          $this->fulltextResource->expects($this->once())->method('resetSearchResults');
          $this->searchRequestConfig->expects($this->once())->method('reset');
  
-diff --git a/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php
+diff --git a/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php b/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php
 new file mode 100644
 index 00000000000..31bec5906ae
 --- /dev/null
-+++ b/app/code/Magento/CatalogSearch/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php
++++ b/Test/Unit/Model/Indexer/Scope/IndexSwitcherTest.php
 @@ -0,0 +1,212 @@
 +<?php
 +/**
@@ -1020,10 +1020,10 @@ index 00000000000..31bec5906ae
 +        $this->indexSwitcher->switchIndex($dimensions);
 +    }
 +}
-diff --git a/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php b/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
+diff --git a/Test/Unit/Model/Search/Indexer/IndexStructureTest.php b/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
 index b20154fa81c..0b689cdc208 100644
---- a/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
-+++ b/app/code/Magento/CatalogSearch/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
+--- a/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
++++ b/Test/Unit/Model/Search/Indexer/IndexStructureTest.php
 @@ -45,9 +45,9 @@ class IndexStructureTest extends \PHPUnit_Framework_TestCase
          $this->resource->expects($this->atLeastOnce())
              ->method('getConnection')
@@ -1049,10 +1049,10 @@ index b20154fa81c..0b689cdc208 100644
      public function testDelete()
      {
          $index = 'index_name';
-diff --git a/app/code/Magento/CatalogSearch/etc/di.xml b/app/code/Magento/CatalogSearch/etc/di.xml
+diff --git a/etc/di.xml b/etc/di.xml
 index 25993adf353..dc104cc7816 100644
---- a/app/code/Magento/CatalogSearch/etc/di.xml
-+++ b/app/code/Magento/CatalogSearch/etc/di.xml
+--- a/etc/di.xml
++++ b/etc/di.xml
 @@ -12,6 +12,7 @@
      <preference for="Magento\Framework\Search\Dynamic\DataProviderInterface" type="Magento\CatalogSearch\Model\Adapter\Mysql\Dynamic\DataProvider" />
      <preference for="Magento\Framework\Search\Adapter\OptionsInterface" type="Magento\CatalogSearch\Model\Adapter\Options" />
@@ -1384,32 +1384,3 @@ index 00000000000..afcfef5fc4c
 +        return $product->loadByAttribute('sku', $sku);
 +    }
 +}
-diff --git a/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php b/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php
-index 20365b399fc..77f2c7a1b64 100644
---- a/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php
-+++ b/lib/internal/Magento/Framework/Indexer/ScopeResolver/IndexScopeResolver.php
-@@ -52,6 +52,7 @@ class IndexScopeResolver implements IndexScopeResolverInterface
-                     $tableNameParts[] = $dimension->getName() . $dimension->getValue();
-             }
-         }
-+
-         return $this->resource->getTableName(implode('_', $tableNameParts));
-     }
- 
-@@ -63,10 +64,12 @@ class IndexScopeResolver implements IndexScopeResolverInterface
-      */
-     private function getScopeId($dimension)
-     {
--        if (is_numeric($dimension->getValue())) {
--            return $dimension->getValue();
--        } else {
--            return $this->scopeResolver->getScope($dimension->getValue())->getId();
-+        $scopeId = $dimension->getValue();
-+
-+        if (!is_numeric($scopeId)) {
-+            $scopeId = $this->scopeResolver->getScope($scopeId)->getId();
-         }
-+
-+        return $scopeId;
-     }
- }
