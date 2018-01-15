@@ -1,0 +1,25 @@
+From 6b5329b362a4007d0b8cbe2c5a4d0318d13e934f Mon Sep 17 00:00:00 2001
+From: Yaroslav Rogoza <enarc@atwix.com>
+Date: Sun, 22 Oct 2017 15:20:49 +0200
+Subject: [PATCH] Fixed order items list on order printing
+
+---
+ app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml b/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml
+index 2d1eee43173..0ce7a534857 100644
+--- a/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml
++++ b/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml
+@@ -17,7 +17,7 @@
+         </referenceContainer>
+         <referenceContainer name="content">
+             <block class="Magento\Sales\Block\Order\PrintShipment" name="sales.order.print" template="order/view.phtml">
+-                <block class="Magento\Sales\Block\Order\PrintShipment" name="order_items" template="order/items.phtml">
++                <block class="Magento\Sales\Block\Order\Items" name="order_items" template="order/items.phtml">
+                     <block class="Magento\Framework\View\Element\RendererList" name="sales.order.print.renderers" as="renderer.list" />
+                     <block class="Magento\Sales\Block\Order\Totals" name="order_totals" template="order/totals.phtml">
+                         <arguments>
+-- 
+2.15.0
+
