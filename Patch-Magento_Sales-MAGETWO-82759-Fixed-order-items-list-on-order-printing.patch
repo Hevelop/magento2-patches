@@ -4,13 +4,13 @@ Date: Sun, 22 Oct 2017 15:20:49 +0200
 Subject: [PATCH] Fixed order items list on order printing
 
 ---
- app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml | 2 +-
+ view/frontend/layout/sales_order_print.xml | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml b/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml
+diff --git a/view/frontend/layout/sales_order_print.xml b/view/frontend/layout/sales_order_print.xml
 index 2d1eee43173..0ce7a534857 100644
---- a/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml
-+++ b/app/code/Magento/Sales/view/frontend/layout/sales_order_print.xml
+--- a/view/frontend/layout/sales_order_print.xml
++++ b/view/frontend/layout/sales_order_print.xml
 @@ -17,7 +17,7 @@
          </referenceContainer>
          <referenceContainer name="content">
