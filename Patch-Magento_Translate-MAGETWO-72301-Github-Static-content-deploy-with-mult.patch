@@ -1,5 +1,3 @@
-diff --git a/Model/Json/PreProcessor.php b/Model/Json/PreProcessor.php
-index e29d8d768a0..1b2dd565d4c 100644
 --- a/Model/Json/PreProcessor.php
 +++ b/Model/Json/PreProcessor.php
 @@ -3,15 +3,18 @@
@@ -8,7 +6,7 @@ index e29d8d768a0..1b2dd565d4c 100644
   */
 +
  namespace Magento\Translation\Model\Json;
- 
+
 +use Magento\Framework\App\AreaList;
 +use Magento\Framework\App\ObjectManager;
 +use Magento\Framework\TranslateInterface;
@@ -22,7 +20,7 @@ index e29d8d768a0..1b2dd565d4c 100644
 -use Magento\Framework\View\Asset\File\FallbackContext;
 -use Magento\Framework\App\AreaList;
 -use Magento\Framework\TranslateInterface;
- 
+
  /**
   * PreProcessor responsible for providing js translation dictionary
 @@ -41,23 +44,30 @@ class PreProcessor implements PreProcessorInterface
@@ -33,7 +31,7 @@ index e29d8d768a0..1b2dd565d4c 100644
 +     * @var DesignInterface
 +     */
 +    private $viewDesign;
- 
+
      /**
       * @param Config $config
       * @param DataProviderInterface $dataProvider
@@ -55,7 +53,7 @@ index e29d8d768a0..1b2dd565d4c 100644
          $this->translate = $translate;
 +        $this->viewDesign = $viewDesign ?: ObjectManager::getInstance()->get(DesignInterface::class);
      }
- 
+
      /**
 @@ -65,6 +75,7 @@ class PreProcessor implements PreProcessorInterface
       *
@@ -77,10 +75,9 @@ index e29d8d768a0..1b2dd565d4c 100644
 +                    ->setLocale($context->getLocale())
 +                    ->loadData($areaCode);
              }
- 
+
              $area = $this->areaList->getArea($areaCode);
-diff --git a/Test/Unit/Model/Json/PreProcessorTest.php b/Test/Unit/Model/Json/PreProcessorTest.php
-index eb53c5b442c..c99993e425d 100644
+
 --- a/Test/Unit/Model/Json/PreProcessorTest.php
 +++ b/Test/Unit/Model/Json/PreProcessorTest.php
 @@ -3,6 +3,7 @@
@@ -89,7 +86,7 @@ index eb53c5b442c..c99993e425d 100644
   */
 +
  namespace Magento\Translation\Test\Unit\Model\Json;
- 
+
  use Magento\Translation\Model\Js\Config;
 @@ -41,7 +42,15 @@ class PreProcessorTest extends \PHPUnit\Framework\TestCase
          $this->configMock = $this->createMock(\Magento\Translation\Model\Js\Config::class);
@@ -111,7 +108,7 @@ index eb53c5b442c..c99993e425d 100644
 @@ -97,6 +106,11 @@ class PreProcessorTest extends \PHPUnit\Framework\TestCase
              ->method('setContentType')
              ->with('json');
- 
+
 +        $this->translateMock
 +            ->expects($this->once())
 +            ->method('loadData')
@@ -120,490 +117,3 @@ index eb53c5b442c..c99993e425d 100644
          $this->model->process($chain);
      }
  }
-diff --git a/dev/tests/integration/testsuite/Magento/Framework/TranslateTest.php b/dev/tests/integration/testsuite/Magento/Framework/TranslateTest.php
-index 73e6fba8276..b11b881847a 100644
---- a/dev/tests/integration/testsuite/Magento/Framework/TranslateTest.php
-+++ b/dev/tests/integration/testsuite/Magento/Framework/TranslateTest.php
-@@ -3,40 +3,43 @@
-  * Copyright © Magento, Inc. All rights reserved.
-  * See COPYING.txt for license details.
-  */
-+
- namespace Magento\Framework;
- 
- use Magento\TestFramework\Helper\Bootstrap;
- use Magento\TestFramework\Helper\CacheCleaner;
-+use PHPUnit\Framework\TestCase;
-+use PHPUnit_Framework_MockObject_MockObject;
- 
- /**
-  * @magentoAppIsolation enabled
-  * @magentoCache all disabled
-  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
-  */
--class TranslateTest extends \PHPUnit\Framework\TestCase
-+class TranslateTest extends TestCase
- {
-     /** @var \Magento\Framework\Translate */
-     private $translate;
- 
-     protected function setUp()
-     {
--        /** @var \Magento\Framework\View\FileSystem $viewFileSystem */
-+        /** @var \Magento\Framework\View\FileSystem | PHPUnit_Framework_MockObject_MockObject $viewFileSystem */
-         $viewFileSystem = $this->createPartialMock(
-             \Magento\Framework\View\FileSystem::class,
--            ['getLocaleFileName', 'getDesignTheme']
-+            ['getLocaleFileName']
-         );
- 
-         $viewFileSystem->expects($this->any())
-             ->method('getLocaleFileName')
-             ->will(
--                $this->returnValue(dirname(__DIR__) . '/Theme/Model/_files/design/frontend/Test/default/i18n/en_US.csv')
-+                $this->returnValue(
-+                    dirname(__DIR__) . '/Translation/Model/_files/Magento/design/Magento/theme/i18n/en_US.csv'
-+                )
-             );
- 
--        /** @var \Magento\Framework\View\Design\ThemeInterface $theme */
-+        /** @var \Magento\Framework\View\Design\ThemeInterface | PHPUnit_Framework_MockObject_MockObject $theme */
-         $theme = $this->createMock(\Magento\Framework\View\Design\ThemeInterface::class);
--        $theme->expects($this->any())->method('getId')->will($this->returnValue(10));
--
--        $viewFileSystem->expects($this->any())->method('getDesignTheme')->will($this->returnValue($theme));
-+        $theme->expects($this->any())->method('getThemePath')->will($this->returnValue('Magento/luma'));
- 
-         /** @var \Magento\TestFramework\ObjectManager $objectManager */
-         $objectManager = Bootstrap::getObjectManager();
-@@ -55,7 +58,7 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-             dirname(__DIR__) . '/Translation/Model/_files/Magento/Catalog/i18n'
-         );
- 
--        /** @var \Magento\Theme\Model\View\Design $designModel */
-+        /** @var \Magento\Theme\Model\View\Design | \PHPUnit_Framework_MockObject_MockObject $designModel */
-         $designModel = $this->getMockBuilder(\Magento\Theme\Model\View\Design::class)
-             ->setMethods(['getDesignTheme'])
-             ->setConstructorArgs(
-@@ -96,6 +99,9 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-     /**
-      * @magentoCache all disabled
-      * @dataProvider translateDataProvider
-+     * @param string $inputText
-+     * @param string $expectedTranslation
-+     * @throws Exception\LocalizedException
-      */
-     public function testTranslate($inputText, $expectedTranslation)
-     {
-@@ -111,9 +117,26 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-     {
-         return [
-             ['', ''],
--            ['Text with different translation on different modules', 'Text translation that was last loaded'],
--            ['text_with_no_translation', 'text_with_no_translation'],
--            ['Design value to translate', 'Design translated value']
-+            [
-+                'Theme phrase will be translated',
-+                'Theme phrase is translated',
-+            ],
-+            [
-+                'Phrase in Magento_Store module that doesn\'t need translation',
-+                'Phrase in Magento_Store module that doesn\'t need translation',
-+            ],
-+            [
-+                'Phrase in Magento_Catalog module that doesn\'t need translation',
-+                'Phrase in Magento_Catalog module that doesn\'t need translation',
-+            ],
-+            [
-+                'Magento_Store module phrase will be override by theme translation',
-+                'Magento_Store module phrase is override by theme translation',
-+            ],
-+            [
-+                'Magento_Catalog module phrase will be override by theme translation',
-+                'Magento_Catalog module phrase is override by theme translation',
-+            ],
-         ];
-     }
- }
-diff --git a/dev/tests/integration/testsuite/Magento/Translation/Model/_files/Magento/design/Magento/theme/i18n/en_US.csv b/dev/tests/integration/testsuite/Magento/Translation/Model/_files/Magento/design/Magento/theme/i18n/en_US.csv
-new file mode 100644
-index 00000000000..f34ef388907
---- /dev/null
-+++ b/dev/tests/integration/testsuite/Magento/Translation/Model/_files/Magento/design/Magento/theme/i18n/en_US.csv
-@@ -0,0 +1,3 @@
-+"Theme phrase will be translated","Theme phrase is translated"
-+"Magento_Catalog module phrase will be override by theme translation","Magento_Catalog module phrase is override by theme translation"
-+"Magento_Store module phrase will be override by theme translation","Magento_Store module phrase is override by theme translation"
-diff --git a/lib/internal/Magento/Framework/Test/Unit/TranslateTest.php b/lib/internal/Magento/Framework/Test/Unit/TranslateTest.php
-index 5c689adc674..cca8d564d31 100644
---- a/lib/internal/Magento/Framework/Test/Unit/TranslateTest.php
-+++ b/lib/internal/Magento/Framework/Test/Unit/TranslateTest.php
-@@ -121,27 +121,60 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-      * @param string $area
-      * @param bool $forceReload
-      * @param array $cachedData
-+     * @dataProvider dataProviderLoadDataCachedTranslation
-+     */
-+    public function testLoadDataCachedTranslation($area, $forceReload, $cachedData)
-+    {
-+        $this->expectsSetConfig('Magento/luma');
-+
-+        $this->cache->expects($this->once())
-+            ->method('load')
-+            ->will($this->returnValue(json_encode($cachedData)));
-+
-+        $this->appState->expects($this->exactly($area ? 0 : 1))
-+            ->method('getAreaCode')
-+            ->will($this->returnValue('frontend'));
-+
-+        $this->translate->loadData($area, $forceReload);
-+        $this->assertEquals($cachedData, $this->translate->getData());
-+    }
-+
-+    public function dataProviderLoadDataCachedTranslation()
-+    {
-+        $cachedData = ['cached 1' => 'translated 1', 'cached 2' => 'translated 2'];
-+        return [
-+            ['adminhtml', false, $cachedData],
-+            ['frontend', false, $cachedData],
-+            [null, false, $cachedData],
-+        ];
-+    }
-+
-+    /**
-+     * @param string $area
-+     * @param bool $forceReload
-      * @dataProvider dataProviderForTestLoadData
-      * @SuppressWarnings(PHPMD.NPathComplexity)
-      */
--    public function testLoadData($area, $forceReload, $cachedData)
-+    public function testLoadData($area, $forceReload)
-     {
--        $this->expectsSetConfig('themeId');
-+        $this->expectsSetConfig('Magento/luma');
-+
-+        $this->appState->expects($this->exactly($area ? 0 : 1))
-+            ->method('getAreaCode')
-+            ->will($this->returnValue('frontend'));
- 
-         $this->cache->expects($this->exactly($forceReload ? 0 : 1))
-             ->method('load')
--            ->will($this->returnValue(json_encode($cachedData)));
--
--        if (!$forceReload && $cachedData !== false) {
--            $this->translate->loadData($area, $forceReload);
--            $this->assertEquals($cachedData, $this->translate->getData());
--            return;
--        }
-+            ->will($this->returnValue(false));
- 
-         $this->directory->expects($this->any())->method('isExist')->will($this->returnValue(true));
- 
-         // _loadModuleTranslation()
--        $this->moduleList->expects($this->once())->method('getNames')->will($this->returnValue(['name']));
-+        $modules = ['some_module', 'other_module', 'another_module', 'current_module'];
-+        $this->request->expects($this->any())
-+            ->method('getControllerModule')
-+            ->willReturn('current_module');
-+        $this->moduleList->expects($this->once())->method('getNames')->will($this->returnValue($modules));
-         $moduleData = [
-             'module original' => 'module translated',
-             'module theme' => 'module-theme original translated',
-@@ -167,11 +200,6 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-                 )
-             );
- 
--        // _loadThemeTranslation()
--        $this->viewFileSystem->expects($this->any())
--            ->method('getLocaleFileName')
--            ->will($this->returnValue('/theme.csv'));
--
-         // _loadPackTranslation
-         $packData = [
-             'pack original' => 'pack translated',
-@@ -180,6 +208,11 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-         ];
-         $this->packDictionary->expects($this->once())->method('getDictionary')->will($this->returnValue($packData));
- 
-+        // _loadThemeTranslation()
-+        $this->viewFileSystem->expects($this->any())
-+            ->method('getLocaleFileName')
-+            ->will($this->returnValue('/theme.csv'));
-+
-         // _loadDbTranslation()
-         $dbData = [
-             'db original' => 'db translated',
-@@ -187,9 +220,7 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-         ];
-         $this->resource->expects($this->any())->method('getTranslationArray')->will($this->returnValue($dbData));
- 
--        if (!$forceReload) {
--            $this->cache->expects($this->exactly(1))->method('save');
--        }
-+        $this->cache->expects($this->exactly($forceReload ? 0 : 1))->method('save');
- 
-         $this->translate->loadData($area, $forceReload);
- 
-@@ -207,20 +238,13 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
- 
-     public function dataProviderForTestLoadData()
-     {
--        $cachedData = ['cached 1' => 'translated 1', 'cached 2' => 'translated 2'];
-         return [
--            ['adminhtml', true, false],
--            ['adminhtml', true, $cachedData],
--            ['adminhtml', false, $cachedData],
--            ['adminhtml', false, false],
--            ['frontend', true, false],
--            ['frontend', true, $cachedData],
--            ['frontend', false, $cachedData],
--            ['frontend', false, false],
--            [null, true, false],
--            [null, true, $cachedData],
--            [null, false, $cachedData],
--            [null, false, false]
-+            ['adminhtml', true],
-+            ['adminhtml', false],
-+            ['frontend', true],
-+            ['frontend', false],
-+            [null, true],
-+            [null, false]
-         ];
-     }
- 
-@@ -309,7 +333,14 @@ class TranslateTest extends \PHPUnit\Framework\TestCase
-                     ]
-                 )
-             );
--        $designTheme = new \Magento\Framework\DataObject(['id' => $themeId]);
-+        $designTheme = $this->getMockBuilder(\Magento\Theme\Model\Theme::class)
-+            ->disableOriginalConstructor()
-+            ->getMock();
-+
-+        $designTheme->expects($this->once())
-+            ->method('getThemePath')
-+            ->willReturn($themeId);
-+
-         $this->viewDesign->expects($this->any())->method('getDesignTheme')->will($this->returnValue($designTheme));
-     }
- }
-diff --git a/lib/internal/Magento/Framework/Translate.php b/lib/internal/Magento/Framework/Translate.php
-index 9ce3925925e..3dc74175c87 100644
---- a/lib/internal/Magento/Framework/Translate.php
-+++ b/lib/internal/Magento/Framework/Translate.php
-@@ -3,6 +3,7 @@
-  * Copyright © Magento, Inc. All rights reserved.
-  * See COPYING.txt for license details.
-  */
-+
- namespace Magento\Framework;
- 
- use Magento\Framework\App\Filesystem\DirectoryList;
-@@ -15,6 +16,12 @@ use Magento\Framework\App\Filesystem\DirectoryList;
-  */
- class Translate implements \Magento\Framework\TranslateInterface
- {
-+    const CONFIG_AREA_KEY = 'area';
-+    const CONFIG_LOCALE_KEY = 'locale';
-+    const CONFIG_SCOPE_KEY = 'scope';
-+    const CONFIG_THEME_KEY = 'theme';
-+    const CONFIG_MODULE_KEY = 'module';
-+
-     /**
-      * Locale code
-      *
-@@ -158,6 +165,14 @@ class Translate implements \Magento\Framework\TranslateInterface
-         $this->directory = $filesystem->getDirectoryRead(DirectoryList::ROOT);
-         $this->_csvParser = $csvParser;
-         $this->packDictionary = $packDictionary;
-+
-+        $this->_config = [
-+            self::CONFIG_AREA_KEY => null,
-+            self::CONFIG_LOCALE_KEY => null,
-+            self::CONFIG_SCOPE_KEY => null,
-+            self::CONFIG_THEME_KEY => null,
-+            self::CONFIG_MODULE_KEY => null
-+        ];
-     }
- 
-     /**
-@@ -166,20 +181,26 @@ class Translate implements \Magento\Framework\TranslateInterface
-      * @param string|null $area
-      * @param bool $forceReload
-      * @return $this
-+     * @throws Exception\LocalizedException
-      */
-     public function loadData($area = null, $forceReload = false)
-     {
-+        $this->_data = [];
-+        if ($area === null) {
-+            $area = $this->_appState->getAreaCode();
-+        }
-         $this->setConfig(
--            ['area' => isset($area) ? $area : $this->_appState->getAreaCode()]
-+            [
-+                self::CONFIG_AREA_KEY => $area,
-+            ]
-         );
- 
-         if (!$forceReload) {
--            $this->_data = $this->_loadCache();
--            if ($this->_data !== false) {
-+            if (false !== $data = $this->_loadCache()) {
-+                $this->_data = $data;
-                 return $this;
-             }
-         }
--        $this->_data = [];
- 
-         $this->_loadModuleTranslation();
-         $this->_loadPackTranslation();
-@@ -202,17 +223,17 @@ class Translate implements \Magento\Framework\TranslateInterface
-     protected function setConfig($config)
-     {
-         $this->_config = $config;
--        if (!isset($this->_config['locale'])) {
--            $this->_config['locale'] = $this->getLocale();
-+        if (!isset($this->_config[self::CONFIG_LOCALE_KEY])) {
-+            $this->_config[self::CONFIG_LOCALE_KEY] = $this->getLocale();
-         }
--        if (!isset($this->_config['scope'])) {
--            $this->_config['scope'] = $this->getScope();
-+        if (!isset($this->_config[self::CONFIG_SCOPE_KEY])) {
-+            $this->_config[self::CONFIG_SCOPE_KEY] = $this->getScope();
-         }
--        if (!isset($this->_config['theme'])) {
--            $this->_config['theme'] = $this->_viewDesign->getDesignTheme()->getId();
-+        if (!isset($this->_config[self::CONFIG_THEME_KEY])) {
-+            $this->_config[self::CONFIG_THEME_KEY] = $this->_viewDesign->getDesignTheme()->getThemePath();
-         }
--        if (!isset($this->_config['module'])) {
--            $this->_config['module'] = $this->getControllerModuleName();
-+        if (!isset($this->_config[self::CONFIG_MODULE_KEY])) {
-+            $this->_config[self::CONFIG_MODULE_KEY] = $this->getControllerModuleName();
-         }
-         return $this;
-     }
-@@ -224,7 +245,7 @@ class Translate implements \Magento\Framework\TranslateInterface
-      */
-     protected function getScope()
-     {
--        $scope = ($this->getConfig('area') == 'adminhtml') ? 'admin' : null;
-+        $scope = ($this->getConfig(self::CONFIG_AREA_KEY) === 'adminhtml') ? 'admin' : null;
-         return $this->_scopeResolver->getScope($scope)->getCode();
-     }
- 
-@@ -295,7 +316,7 @@ class Translate implements \Magento\Framework\TranslateInterface
-             }
- 
-             $key = str_replace('""', '"', $key);
--            $value  = str_replace('""', '"', $value);
-+            $value = str_replace('""', '"', $value);
- 
-             $this->_data[$key] = $value;
-         }
-@@ -309,10 +330,6 @@ class Translate implements \Magento\Framework\TranslateInterface
-      */
-     protected function _loadThemeTranslation()
-     {
--        if (!$this->_config['theme']) {
--            return $this;
--        }
--
-         $file = $this->_getThemeTranslationFile($this->getLocale());
-         if ($file) {
-             $this->_addData($this->_getFileData($file));
-@@ -339,7 +356,7 @@ class Translate implements \Magento\Framework\TranslateInterface
-     protected function _loadDbTranslation()
-     {
-         $data = $this->_translateResource->getTranslationArray(null, $this->getLocale());
--        $this->_addData(array_map("htmlspecialchars_decode", $data));
-+        $this->_addData(array_map('htmlspecialchars_decode', $data));
-         return $this;
-     }
- 
-@@ -367,7 +384,7 @@ class Translate implements \Magento\Framework\TranslateInterface
-     {
-         return $this->_viewFileSystem->getLocaleFileName(
-             'i18n' . '/' . $locale . '.csv',
--            ['area' => $this->getConfig('area')]
-+            $this->_config
-         );
-     }
- 
-@@ -422,8 +439,7 @@ class Translate implements \Magento\Framework\TranslateInterface
-     public function setLocale($locale)
-     {
-         $this->_localeCode = $locale;
--        $this->_config['locale'] = $locale;
--        $this->getCacheId(true);
-+        $this->_config[self::CONFIG_LOCALE_KEY] = $locale;
-         return $this;
-     }
- 
-@@ -434,11 +450,11 @@ class Translate implements \Magento\Framework\TranslateInterface
-      */
-     public function getTheme()
-     {
--        $theme = $this->request->getParam('theme');
-+        $theme = $this->request->getParam(self::CONFIG_THEME_KEY);
-         if (empty($theme)) {
--            return 'theme' . $this->getConfig('theme');
-+            return self::CONFIG_THEME_KEY . $this->getConfig(self::CONFIG_THEME_KEY);
-         }
--        return 'theme' . $theme['theme_title'];
-+        return self::CONFIG_THEME_KEY . $theme['theme_title'];
-     }
- 
-     /**
-@@ -446,28 +462,19 @@ class Translate implements \Magento\Framework\TranslateInterface
-      *
-      * @param bool $forceReload
-      * @return string
-+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-      */
-     protected function getCacheId($forceReload = false)
-     {
--        if ($this->_cacheId === null || $forceReload) {
--            $this->_cacheId = \Magento\Framework\App\Cache\Type\Translate::TYPE_IDENTIFIER;
--            if (isset($this->_config['locale'])) {
--                $this->_cacheId .= '_' . $this->_config['locale'];
--            }
--            if (isset($this->_config['area'])) {
--                $this->_cacheId .= '_' . $this->_config['area'];
--            }
--            if (isset($this->_config['scope'])) {
--                $this->_cacheId .= '_' . $this->_config['scope'];
--            }
--            if (isset($this->_config['theme'])) {
--                $this->_cacheId .= '_' . $this->_config['theme'];
--            }
--            if (isset($this->_config['module'])) {
--                $this->_cacheId .= '_' . $this->_config['module'];
--            }
--        }
--        return $this->_cacheId;
-+        $_cacheId = \Magento\Framework\App\Cache\Type\Translate::TYPE_IDENTIFIER;
-+        $_cacheId .= '_' . $this->_config[self::CONFIG_LOCALE_KEY];
-+        $_cacheId .= '_' . $this->_config[self::CONFIG_AREA_KEY];
-+        $_cacheId .= '_' . $this->_config[self::CONFIG_SCOPE_KEY];
-+        $_cacheId .= '_' . $this->_config[self::CONFIG_THEME_KEY];
-+        $_cacheId .= '_' . $this->_config[self::CONFIG_MODULE_KEY];
-+
-+        $this->_cacheId = $_cacheId;
-+        return $_cacheId;
-     }
- 
-     /**
-@@ -491,7 +498,7 @@ class Translate implements \Magento\Framework\TranslateInterface
-      */
-     protected function _saveCache()
-     {
--        $this->_cache->save($this->getSerializer()->serialize($this->getData()), $this->getCacheId(true), [], false);
-+        $this->_cache->save($this->getSerializer()->serialize($this->getData()), $this->getCacheId(), [], false);
-         return $this;
-     }
- 
--- 
-2.15.0
-
