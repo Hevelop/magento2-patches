@@ -1,0 +1,43 @@
+From 7b27c41d15d42dc480bfd43f5d6937d4caccdf58 Mon Sep 17 00:00:00 2001
+From: etessari <enrico@hevelop.com>
+Date: Wed, 22 Nov 2017 16:41:25 +0100
+Subject: [PATCH] adminhtml category controller fix resolve category id
+
+---
+ Controller/Adminhtml/Category.php | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/Controller/Adminhtml/Category.php b/Controller/Adminhtml/Category.php
+index 366202d..b025765 100644
+--- a/Controller/Adminhtml/Category.php
++++ b/Controller/Adminhtml/Category.php
+@@ -31,7 +31,7 @@ abstract class Category extends \Magento\Backend\App\Action
+      */
+     protected function _initCategory($getRootInstead = false)
+     {
+-        $categoryId = (int)$this->getRequest()->getParam('id', false);
++        $categoryId = $this->resolveCategoryId();
+         $storeId = (int)$this->getRequest()->getParam('store');
+         $category = $this->_objectManager->create('Magento\Catalog\Model\Category');
+         $category->setStoreId($storeId);
+@@ -63,6 +63,17 @@ abstract class Category extends \Magento\Backend\App\Action
+     }
+ 
+     /**
++     * Resolve Category Id (from get or from post).
++     *
++     * @return int
++     */
++    private function resolveCategoryId()
++    {
++        $categoryId = (int)$this->getRequest()->getParam('id', false);
++        return $categoryId ?: (int)$this->getRequest()->getParam('entity_id', false);
++    }
++
++    /**
+      * Build response for ajax request
+      *
+      * @param \Magento\Catalog\Model\Category $category
+-- 
+2.8.1
+

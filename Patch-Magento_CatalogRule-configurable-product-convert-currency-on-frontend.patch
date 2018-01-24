@@ -1,0 +1,29 @@
+From 9d4e01e92ab739dcb3cf7bb7776ecad6a802d588 Mon Sep 17 00:00:00 2001
+From: etessari <enrico@hevelop.com>
+Date: Thu, 23 Nov 2017 17:15:50 +0100
+Subject: [PATCH] configurable product convert currency on frontend fix
+
+---
+ Pricing/Price/CatalogRulePrice.php | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Pricing/Price/CatalogRulePrice.php b/Pricing/Price/CatalogRulePrice.php
+index 7cc7fd4..bcd1085 100644
+--- a/Pricing/Price/CatalogRulePrice.php
++++ b/Pricing/Price/CatalogRulePrice.php
+@@ -99,9 +99,9 @@ class CatalogRulePrice extends AbstractPrice implements BasePriceProviderInterfa
+                         $this->product->getId()
+                     );
+                 $this->value = $this->value ? floatval($this->value) : false;
+-                if ($this->value) {
+-                    $this->value = $this->priceCurrency->convertAndRound($this->value);
+-                }
++            }
++            if ($this->value) {
++                $this->value = $this->priceCurrency->convertAndRound($this->value);
+             }
+         }
+ 
+-- 
+2.8.1
+
