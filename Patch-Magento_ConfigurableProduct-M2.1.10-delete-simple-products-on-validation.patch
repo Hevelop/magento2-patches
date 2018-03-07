@@ -1,0 +1,15 @@
+diff --git a/view/adminhtml/web/js/variations/variations.js b/view/adminhtml/web/js/variations/variations.js
+--- a/view/adminhtml/web/js/variations/variations.js
++++ b/view/adminhtml/web/js/variations/variations.js
+@@ -327,11 +327,9 @@ define([
+         serializeData: function () {
+             this.source.data["product"]["configurable-matrix-serialized"] =
+                 JSON.stringify(this.source.data["configurable-matrix"]);
+-            delete this.source.data["configurable-matrix"];
+ 
+             this.source.data["product"]["associated_product_ids_serialized"] =
+                 JSON.stringify(this.source.data["associated_product_ids"]);
+-            delete this.source.data["associated_product_ids"];
+         },
+ 
+         /**
