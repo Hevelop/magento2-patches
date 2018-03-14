@@ -1,0 +1,34 @@
+diff --git a/etc/events.xml b/etc/events.xml
+index 8265e3a..9da869e 100644
+--- a/etc/events.xml
++++ b/etc/events.xml
+@@ -48,11 +48,6 @@
+     <event name="model_save_commit_after">
+         <observer name="flush_cache_after_model_save" instance="Magento\PageCache\Observer\FlushCacheByTags" />
+     </event>
+-    <event name="controller_action_predispatch">
+-        <observer name="register_form_key"
+-                  instance="Magento\PageCache\Observer\RegisterFormKeyFromCookie"
+-                  />
+-    </event>
+     <event name="backend_auth_user_login_success">
+         <observer name="FlushFormKey" instance="Magento\PageCache\Observer\FlushFormKey"/>
+     </event>
+diff --git a/etc/frontend/events.xml b/etc/frontend/events.xml
+new file mode 100644
+index 0000000..10ef2ee
+--- /dev/null
++++ b/etc/frontend/events.xml
+@@ -0,0 +1,12 @@
++<?xml version="1.0"?>
++<!--
++/**
++ * Copyright © 2016 Magento. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++-->
++<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
++    <event name="controller_action_predispatch">
++        <observer name="register_form_key" instance="Magento\PageCache\Observer\RegisterFormKeyFromCookie" />
++    </event>
++</config>
