@@ -1,23 +1,10 @@
-From 684cd5b67c73a40758cdf324200fcd362021465d Mon Sep 17 00:00:00 2001
-From: Thomas Domingues <thomas.domingues@epita.fr>
-Date: Wed, 7 Feb 2018 12:29:50 +0100
-Subject: [PATCH] Fixed store view switcher issues when changing store view on
- product and category pages.
-
----
- app/code/Magento/Catalog/Controller/Category/View.php | 3 ++-
- app/code/Magento/Catalog/Controller/Product/View.php  | 3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/app/code/Magento/Catalog/Controller/Category/View.php b/app/code/Magento/Catalog/Controller/Category/View.php
-index 756c06a05c42..42de613abcdb 100644
 --- a/Controller/Category/View.php
 +++ b/Controller/Category/View.php
 @@ -152,7 +152,8 @@ protected function _initCategory()
       */
      public function execute()
      {
--        if ($this->_request->getParam(\Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED) && !$this->_request->getParam('___from_store')) {
+-        if ($this->_request->getParam(\Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED)) {
 +        if ($this->_request->getParam(\Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED)
 +            && !$this->_request->getParam('___from_store')) {
              return $this->resultRedirectFactory->create()->setUrl($this->_redirect->getRedirectUrl());
@@ -30,8 +17,8 @@ index 27def2125ca1..515634669ba7 100644
 @@ -76,7 +76,8 @@ public function execute()
          $productId = (int) $this->getRequest()->getParam('id');
          $specifyOptions = $this->getRequest()->getParam('options');
- 
--        if ($this->getRequest()->isPost() && $this->getRequest()->getParam(self::PARAM_NAME_URL_ENCODED) && !$this->_request->getParam('___from_store')) {
+
+-        if ($this->getRequest()->isPost() && $this->getRequest()->getParam(self::PARAM_NAME_URL_ENCODED)) {
 +        if ($this->getRequest()->isPost() && $this->getRequest()->getParam(self::PARAM_NAME_URL_ENCODED)
 +            && !$this->_request->getParam('___from_store')) {
              $product = $this->_initProduct();
