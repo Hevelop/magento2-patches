@@ -1,0 +1,122 @@
+--- a/Model/Store.php
++++ b/Model/Store.php
+@@ -1166,6 +1166,9 @@ public function getCurrentUrl($fromStore = true)
+         if (!$this->isUseStoreInUrl()) {
+             $storeParsedQuery['___store'] = $this->getCode();
+         }
++        if ($this->getCode() !== $this->_storeManager->getStore()->getCode()) {
++            $fromStore = true;
++        }
+         if ($fromStore !== false) {
+             $storeParsedQuery['___from_store'] = $fromStore ===
+                 true ? $this->_storeManager->getStore()->getCode() : $fromStore;
+@@ -1175,9 +1178,14 @@ public function getCurrentUrl($fromStore = true)
+             . '://'
+             . $storeParsedUrl['host']
+             . (isset($storeParsedUrl['port']) ? ':' . $storeParsedUrl['port'] : '')
+-            . $storeParsedUrl['path']
+-            . $requestString
+-            . ($storeParsedQuery ? '?' . http_build_query($storeParsedQuery, '', '&amp;') : '');
++            . $storeParsedUrl['path'];
++
++        //avoid query params duplication
++        if (!preg_match('/___store=(.*?)&___from_store=(.*?)/', $requestString)) {
++            $currentUrl .= $requestString;
++        }
++
++        $currentUrl .= ($storeParsedQuery ? '?' . http_build_query($storeParsedQuery, '', '&amp;') : '');
+
+         return $currentUrl;
+     }
+
+
+--- a/Model/Store.php
++++ b/Model/Store.php
+@@ -1166,26 +1166,29 @@ public function getCurrentUrl($fromStore = true)
+         if (!$this->isUseStoreInUrl()) {
+             $storeParsedQuery['___store'] = $this->getCode();
+         }
+-        if ($this->getCode() !== $this->_storeManager->getStore()->getCode()) {
+-            $fromStore = true;
+-        }
++
+         if ($fromStore !== false) {
+             $storeParsedQuery['___from_store'] = $fromStore ===
+                 true ? $this->_storeManager->getStore()->getCode() : $fromStore;
+         }
+
++        $requestStringParts = explode('?', $requestString, 2);
++        $requestStringPath = $requestStringParts[0];
++        if (isset($requestStringParts[1])) {
++            parse_str($requestStringParts[1], $requestString);
++        } else {
++            $requestString = [];
++        }
++
++        $currentUrlQueryParams = array_merge($requestString, $storeParsedQuery);
++
+         $currentUrl = $storeParsedUrl['scheme']
+             . '://'
+             . $storeParsedUrl['host']
+             . (isset($storeParsedUrl['port']) ? ':' . $storeParsedUrl['port'] : '')
+-            . $storeParsedUrl['path'];
+-
+-        //avoid query params duplication
+-        if (!preg_match('/___store=(.*?)&___from_store=(.*?)/', $requestString)) {
+-            $currentUrl .= $requestString;
+-        }
+-
+-        $currentUrl .= ($storeParsedQuery ? '?' . http_build_query($storeParsedQuery, '', '&amp;') : '');
++            . $storeParsedUrl['path']
++            . $requestStringPath
++            . ($currentUrlQueryParams ? '?' . http_build_query($currentUrlQueryParams, '', '&amp;') : '');
+
+         return $currentUrl;
+     }
+--- a/Block/Switcher.php
++++ b/Block/Switcher.php
+@@ -10,7 +10,9 @@
+ namespace Magento\Store\Block;
+
+ use Magento\Directory\Helper\Data;
++use Magento\Store\Api\StoreResolverInterface;
+ use Magento\Store\Model\Group;
++use Magento\Store\Model\Store;
+
+ /**
+  * @api
+@@ -217,15 +219,18 @@ public function getStoreName()
+     /**
+      * Returns target store post data
+      *
+-     * @param \Magento\Store\Model\Store $store
++     * @param Store $store
+      * @param array $data
+      * @return string
+      */
+-    public function getTargetStorePostData(\Magento\Store\Model\Store $store, $data = [])
++    public function getTargetStorePostData(Store $store, $data = [])
+     {
+-        $data[\Magento\Store\Api\StoreResolverInterface::PARAM_NAME] = $store->getCode();
++        $data[StoreResolverInterface::PARAM_NAME] = $store->getCode();
++
++        //We need to set fromStore argument as true because
++        //it will enable proper URL rewriting during store switching.
+         return $this->_postDataHelper->getPostData(
+-            $store->getCurrentUrl(false),
++            $store->getCurrentUrl(true),
+             $data
+         );
+     }
+
+--- a/Test/Unit/Block/SwitcherTest.php
++++ b/Test/Unit/Block/SwitcherTest.php
+@@ -53,7 +53,7 @@ public function testGetTargetStorePostData()
+         $storeSwitchUrl = 'http://domain.com/stores/store/switch';
+         $store->expects($this->atLeastOnce())
+             ->method('getCurrentUrl')
+-            ->with(false)
++            ->with(true)
+             ->willReturn($storeSwitchUrl);
+         $this->corePostDataHelper->expects($this->any())
+             ->method('getPostData')
