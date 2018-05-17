@@ -1,0 +1,22 @@
+From 5b37b482f57f8c1b2755680b45df67a700e5331d Mon Sep 17 00:00:00 2001
+From: Matteo Manfrin Hevelop <matteo@hevelop.com>
+Date: Thu, 17 May 2018 11:35:51 +0200
+Subject: [PATCH] patch
+
+---
+diff --git a/Model/ResourceModel/Reward/History/Collection.php b/Model/ResourceModel/Reward/History/Collection.php
+index d2fb085..664791d 100644
+--- a/Model/ResourceModel/Reward/History/Collection.php
++++ b/Model/ResourceModel/Reward/History/Collection.php
+@@ -285,7 +285,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
+ 
+         $field = $expiryConfig->getExpiryCalculation() == 'static' ? 'expired_at_static' : 'expired_at_dynamic';
+         $expireAtLimit = (new \DateTime(null, new \DateTimeZone('UTC')))
+-            ->add(new \DateInterval('P', $inDays . 'D'))
++            ->add(new \DateInterval('P' . $inDays . 'D'))
+             ->format('Y-m-d H:i:s');
+ 
+         $this->getSelect()->columns(
+-- 
+2.7.4
+
