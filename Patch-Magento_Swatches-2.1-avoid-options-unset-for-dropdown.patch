@@ -1,0 +1,42 @@
+From 143c20511b4964519562c64dfb19d5b9701678ae Mon Sep 17 00:00:00 2001
+From: etessari <enrico@hevelop.com>
+Date: Thu, 26 Apr 2018 12:25:52 +0200
+Subject: [PATCH] patch setProperOptionsArray
+
+---
+ Model/Plugin/EavAttribute.php | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/Model/Plugin/EavAttribute.php b/Model/Plugin/EavAttribute.php
+index c9b8771..8128b91 100644
+--- a/Model/Plugin/EavAttribute.php
++++ b/Model/Plugin/EavAttribute.php
+@@ -118,9 +118,17 @@ class EavAttribute
+             $swatchesArray = $attribute->getData('swatchtext');
+         }
+         if ($canReplace == true) {
+-            $attribute->setData('option', $optionsArray);
+-            $attribute->setData('default', $defaultValue);
+-            $attribute->setData('swatch', $swatchesArray);
++            if (!empty($optionsArray)) {
++                $attribute->setData('option', $optionsArray);
++            }
++            if (!empty($defaultValue)) {
++                $attribute->setData('default', $defaultValue);
++            } else {
++                $attribute->setData('default', [0 => $attribute->getDefaultValue()]);
++            }
++            if (!empty($swatchesArray)) {
++                $attribute->setData('swatch', $swatchesArray);
++            }
+         }
+     }
+ 
+@@ -437,3 +445,4 @@ class EavAttribute
+         return true;
+     }
+ }
++
+-- 
+2.8.1
+
