@@ -1,0 +1,12 @@
+--- a/Model/Json/PreProcessor.php
++++ b/Model/Json/PreProcessor.php
+@@ -81,6 +81,7 @@ class PreProcessor implements PreProcessorInterface
+             }
+
+             $area = $this->areaList->getArea($areaCode);
++            $area->load(\Magento\Framework\App\Area::PART_DESIGN);
+             $area->load(\Magento\Framework\App\Area::PART_TRANSLATE);
+
+             $chain->setContent(json_encode($this->dataProvider->getData($themePath)));
+--
+
