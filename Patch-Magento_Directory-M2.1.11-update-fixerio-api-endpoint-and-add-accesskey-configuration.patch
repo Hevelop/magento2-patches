@@ -1,0 +1,16 @@
+diff --git a/Model/Currency/Import/FixerIo.php b/Model/Currency/Import/FixerIo.php
+index b4a5728..feb8878 100644
+--- a/Model/Currency/Import/FixerIo.php
++++ b/Model/Currency/Import/FixerIo.php
+@@ -78,6 +78,8 @@ class FixerIo extends \Magento\Directory\Model\Currency\Import\AbstractImport
+         $currenciesStr = implode(',', $currenciesTo);
+         $url = str_replace('{{CURRENCY_FROM}}', $currencyFrom, self::CURRENCY_CONVERTER_URL);
+         $url = str_replace('{{CURRENCY_TO}}', $currenciesStr, $url);
++        $fixerAccessKey = $this->scopeConfig->getValue('currency/fixerio/access_key');
++        $url = str_replace('http://api.fixer.io/', 'http://data.fixer.io/api/', $url . "&access_key=" . $fixerAccessKey);
+ 
+         set_time_limit(0);
+         try {
+--
+2.10.1
+
