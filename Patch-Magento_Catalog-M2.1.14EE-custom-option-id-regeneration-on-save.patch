@@ -1,5 +1,5 @@
 diff --git a/module-catalog/Model/Product/Option/SaveHandler.php b/module-catalog/Model/Product/Option/SaveHandler.php
-index ff15f88..a021625 100644
+index ff15f88..c1ef351 100644
 --- a/module-catalog/Model/Product/Option/SaveHandler.php
 +++ b/module-catalog/Model/Product/Option/SaveHandler.php
 @@ -3,9 +3,10 @@
@@ -59,7 +59,7 @@ index ff15f88..a021625 100644
          }
  
          /** @var \Magento\Catalog\Api\Data\ProductInterface $entity */
-@@ -54,9 +66,24 @@ class SaveHandler implements ExtensionInterface
+@@ -54,9 +66,25 @@ class SaveHandler implements ExtensionInterface
                  $this->optionRepository->delete($option);
              }
          }
@@ -76,6 +76,7 @@ index ff15f88..a021625 100644
 +                    if (is_null($val['option_type_id']) && array_key_exists($val['title'], $map[$option->getSku()]['values'])) {
 +                        $val['option_type_id'] = $map[$option->getSku()]['values'][$val['title']];
 +                    }
++                    $val['mageworx_option_type_id'] = null;
 +                    $refactoredValues[] = $val;
 +                }
 +
