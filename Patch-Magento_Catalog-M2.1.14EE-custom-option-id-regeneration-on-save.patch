@@ -18,7 +18,7 @@ index 579eaec..843e1c3 100644
                  if (isset($originalValues)) {
                      $newValues = $this->markRemovedValues($newValues, $originalValues);
 diff --git a/module-catalog/Model/Product/Option/SaveHandler.php b/module-catalog/Model/Product/Option/SaveHandler.php
-index ff15f88..7fe02ee 100644
+index ff15f88..665d064 100644
 --- a/module-catalog/Model/Product/Option/SaveHandler.php
 +++ b/module-catalog/Model/Product/Option/SaveHandler.php
 @@ -3,9 +3,10 @@
@@ -43,16 +43,11 @@ index ff15f88..7fe02ee 100644
          $this->optionRepository = $optionRepository;
      }
  
-@@ -35,17 +37,33 @@ class SaveHandler implements ExtensionInterface
+@@ -35,17 +37,28 @@ class SaveHandler implements ExtensionInterface
       */
      public function execute($entity, $arguments = [])
      {
-+        $origOptions = array();
-+
-+        if (isset($entity->getOrigData()['options'])) {
-+            $origOptions = $entity->getOrigData()['options'];
-+        }
-+
++        $origOptions = $entity->getOrigData()['options'];
 +
          $options = $entity->getOptions();
 +
@@ -85,7 +80,7 @@ index ff15f88..7fe02ee 100644
          }
  
          /** @var \Magento\Catalog\Api\Data\ProductInterface $entity */
-@@ -54,9 +72,25 @@ class SaveHandler implements ExtensionInterface
+@@ -54,9 +67,24 @@ class SaveHandler implements ExtensionInterface
                  $this->optionRepository->delete($option);
              }
          }
@@ -97,16 +92,15 @@ index ff15f88..7fe02ee 100644
 +                }
 +                $optionDataValues = $option->getData('values');
 +                $refactoredValues = [];
-+                if (!empty($origOptions)) {
-+                    foreach ($optionDataValues as $val) {
-+                        if (isset($val['mageworx_option_type_id']) && is_null($val['option_type_id']) && array_key_exists($val['mageworx_option_type_id'], $map[$option->getSku()]['values'])) {
-+                            $val['option_type_id'] = $map[$option->getSku()]['values'][$val['mageworx_option_type_id']];
-+                        }
-+                        $refactoredValues[] = $val;
++                foreach ($optionDataValues as $val) {
++                    if (isset($val['mageworx_option_type_id']) && is_null($val['option_type_id']) && array_key_exists($val['mageworx_option_type_id'], $map[$option->getSku()]['values'])) {
++                        $val['option_type_id'] = $map[$option->getSku()]['values'][$val['mageworx_option_type_id']];
 +                    }
-+                    $option->unsetData('values');
-+                    $option->setData('values', $refactoredValues);
++                    $refactoredValues[] = $val;
 +                }
++
++                $option->unsetData('values');
++                $option->setData('values', $refactoredValues);
 +
 +                $option->setProductSku($entity->getSku());
                  $this->optionRepository->save($option);
