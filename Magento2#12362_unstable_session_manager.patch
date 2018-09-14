@@ -1,7 +1,7 @@
-diff --git a/lib/internal/Magento/Framework/Session/SessionManager.php b/lib/internal/Magento/Framework/Session/SessionManager.php
+diff --git a/Session/SessionManager.php b/Session/SessionManager.php
 index ecf169c..5914e91 100644
---- a/lib/internal/Magento/Framework/Session/SessionManager.php
-+++ b/lib/internal/Magento/Framework/Session/SessionManager.php
+--- a/Session/SessionManager.php
++++ b/Session/SessionManager.php
 @@ -6,9 +6,7 @@
   * See COPYING.txt for license details.
   */
