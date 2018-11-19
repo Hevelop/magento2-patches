@@ -1,0 +1,38 @@
+--- Model/Currency/Import/FixerIo.php	(date 1539769041000)
++++ Model/Currency/Import/FixerIo.php	(date 1539769185000)
+@@ -13,7 +13,7 @@
+     /**
+      * @var string
+      */
+-    const CURRENCY_CONVERTER_URL = 'http://api.fixer.io/latest?base={{CURRENCY_FROM}}&symbols={{CURRENCY_TO}}';
++    const CURRENCY_CONVERTER_URL = 'http://api.fixer.io/live?currencies={{CURRENCY_TO}}';
+
+     /**
+      * Http Client Factory
+@@ -78,6 +78,8 @@
+         $currenciesStr = implode(',', $currenciesTo);
+         $url = str_replace('{{CURRENCY_FROM}}', $currencyFrom, self::CURRENCY_CONVERTER_URL);
+         $url = str_replace('{{CURRENCY_TO}}', $currenciesStr, $url);
++        $fixerAccessKey = $this->scopeConfig->getValue('currency/fixerio/access_key');
++        $url = str_replace('http://api.fixer.io/', 'http://data.fixer.io/api/', $url . "&access_key=" . $fixerAccessKey);
+
+         set_time_limit(0);
+         try {
+@@ -90,12 +92,12 @@
+             if ($currencyFrom == $currencyTo) {
+                 $data[$currencyFrom][$currencyTo] = $this->_numberFormat(1);
+             } else {
+-                if (empty($response['rates'][$currencyTo])) {
++                if (empty($response['quotes']['USD' . $currencyTo]) || empty($response['quotes']['USD' . $currencyFrom])) {
+                     $this->_messages[] = __('We can\'t retrieve a rate from %1 for %2.', $url, $currencyTo);
+                     $data[$currencyFrom][$currencyTo] = null;
+                 } else {
+                     $data[$currencyFrom][$currencyTo] = $this->_numberFormat(
+-                        (double)$response['rates'][$currencyTo]
++                        (double)($response['quotes']['USD' . $currencyTo] / $response['quotes']['USD' . $currencyFrom])
+                     );
+                 }
+             }
+
+--
+magento/module-directory 100.2.5

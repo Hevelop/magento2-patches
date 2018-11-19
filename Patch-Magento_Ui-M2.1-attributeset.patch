@@ -1,0 +1,13 @@
+diff --git a/view/base/web/js/form/element/multiselect.js b/view/base/web/js/form/element/multiselect.js
+index 0876f3f..c001a3f 100644
+--- a/view/base/web/js/form/element/multiselect.js
++++ b/view/base/web/js/form/element/multiselect.js
+@@ -48,7 +48,7 @@ define([
+          * @param {Array} data - current component value
+          */
+         setPrepareToSendData: function (data) {
+-            if (!data.length) {
++            if (!data || !data.length) {
+                 data = '';
+             }
+ 

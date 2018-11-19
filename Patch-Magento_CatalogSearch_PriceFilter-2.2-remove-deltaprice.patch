@@ -1,0 +1,15 @@
+diff --git a/Model/Layer/Filter/Price.php b/Model/Layer/Filter/Price.php
+index 108f1b9..703ecdd 100644
+--- a/Model/Layer/Filter/Price.php
++++ b/Model/Layer/Filter/Price.php
+@@ -137,7 +137,7 @@ class Price extends AbstractFilter
+
+         $this->getLayer()->getProductCollection()->addFieldToFilter(
+             'price',
+-            ['from' => $from, 'to' =>  empty($to) || $from == $to ? $to : $to - self::PRICE_DELTA]
++            ['from' => $from, 'to' =>  $to]
+         );
+
+         $this->getLayer()->getState()->addFilter(
+--
+2.14.2
