@@ -1,0 +1,11 @@
+--- a/Pricing/Adjustment/DefaultSelectionPriceListProvider.php
++++ b/Pricing/Adjustment/DefaultSelectionPriceListProvider.php
+@@ -57,7 +57,7 @@ class DefaultSelectionPriceListProvider implements SelectionPriceListProviderInt
+                 $bundleProduct
+             );
+             $selectionsCollection->removeAttributeToSelect();
+-            $selectionsCollection->addQuantityFilter();
++            //$selectionsCollection->addQuantityFilter();
+
+             if (!$useRegularPrice) {
+                 $selectionsCollection->addAttributeToSelect('special_price');
