@@ -9,3 +9,15 @@
 
              if (!$useRegularPrice) {
                  $selectionsCollection->addAttributeToSelect('special_price');
+--- a/Model/Product/Type.php
++++ b/Model/Product/Type.php
+@@ -593,7 +593,8 @@ class Type extends \Magento\Catalog\Model\Product\Type\AbstractType
+             /** @var Selections $selectionsCollection */
+             $selectionsCollection = $this->_bundleCollection->create();
+             $selectionsCollection->addAttributeToSelect('status');
+-            $selectionsCollection->addQuantityFilter();
++//          remove filter for price calculation
++//            $selectionsCollection->addQuantityFilter();
+             $selectionsCollection->setFlag('product_children', true);
+             $selectionsCollection->addFilterByRequiredOptions();
+             $selectionsCollection->setOptionIdsFilter([$option->getId()]);
