@@ -1,0 +1,40 @@
+--- a/Controller/Category/View.php
++++ b/Controller/Category/View.php
+@@ -4,6 +4,7 @@
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
++
+ namespace Magento\Catalog\Controller\Category;
+
+ use Magento\Catalog\Api\CategoryRepositoryInterface;
+@@ -152,7 +153,8 @@ class View extends \Magento\Framework\App\Action\Action
+      */
+     public function execute()
+     {
+-        if ($this->_request->getParam(\Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED)) {
++        if ($this->_request->getParam(\Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED)
++            && !$this->_request->getParam('___from_store')) {
+             return $this->resultRedirectFactory->create()->setUrl($this->_redirect->getRedirectUrl());
+         }
+         $category = $this->_initCategory();
+--- a/Controller/Product/View.php
++++ b/Controller/Product/View.php
+@@ -4,6 +4,7 @@
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
++
+ namespace Magento\Catalog\Controller\Product;
+
+ use Magento\Framework\App\Action\Context;
+@@ -76,7 +77,8 @@ class View extends \Magento\Catalog\Controller\Product
+         $productId = (int) $this->getRequest()->getParam('id');
+         $specifyOptions = $this->getRequest()->getParam('options');
+
+-        if ($this->getRequest()->isPost() && $this->getRequest()->getParam(self::PARAM_NAME_URL_ENCODED)) {
++        if ($this->getRequest()->isPost() && $this->getRequest()->getParam(\Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED)
++            && !$this->_request->getParam('___from_store')) {
+             $product = $this->_initProduct();
+             if (!$product) {
+                 return $this->noProductRedirect();
