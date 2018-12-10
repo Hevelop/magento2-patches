@@ -1,0 +1,28 @@
+diff --git a/vendor/magento/module-catalog-permissions/Model/Indexer/AbstractAction.php b/vendor/magento/module-catalog-permissions/Model/Indexer/AbstractAction.php
+index fd867224064..f3cef9a48fc 100644
+--- a/vendor/magento/module-catalog-permissions/Model/Indexer/AbstractAction.php
++++ b/vendor/magento/module-catalog-permissions/Model/Indexer/AbstractAction.php
+@@ -302,19 +302,14 @@ abstract class AbstractAction
+         if ($this->isRangingNeeded()) {
+             $max = $this->connection->fetchOne($this->connection->select()->from(
+                 ['cpe' => $this->getTable('catalog_product_entity')],
+-                ['MAX(cpe.entity_id)']
+-            ));
+-
+-            $storesNumber = $this->connection->fetchOne($this->connection->select()->from(
+-                ['stores' => $this->getTable('store')],
+                 ['count(*)']
+             ));
+-            $step = max(self::PRODUCT_STEP_COUNT / $storesNumber, 1);
++
++            $step = max(self::PRODUCT_STEP_COUNT / $max, 1);
+             $selects = [];
+-            for ($i = 0; $i <= $max / $step; $i++) {
++            for ($i = 0; $i <= floor($step); $i++) {
+                 $selectRange = clone $select;
+-                $selectRange->where('category_product.product_id >= ?', $i * $step + 1);
+-                $selectRange->where('category_product.product_id <= ?', ($i + 1) * $step);
++                $selectRange->limit(self::PRODUCT_STEP_COUNT, $i * self::PRODUCT_STEP_COUNT);
+                 $selects[] = $selectRange;
+             }
+             return $selects;
