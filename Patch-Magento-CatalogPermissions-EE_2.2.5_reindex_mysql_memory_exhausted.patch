@@ -1,5 +1,5 @@
---- a/vendor/magento/module-catalog-permissions/Model/Indexer/AbstractAction.php
-+++ b/vendor/magento/module-catalog-permissions/Model/Indexer/AbstractAction.php
+--- a/Model/Indexer/AbstractAction.php
++++ b/Model/Indexer/AbstractAction.php
 @@ -302,19 +302,14 @@ abstract class AbstractAction
          if ($this->isRangingNeeded()) {
              $max = $this->connection->fetchOne($this->connection->select()->from(
