@@ -1,0 +1,14 @@
+diff --git a/CatalogRule/Model/Action/Index/Refresh.php b/CatalogRule/Model/Action/Index/Refresh.php
+index f26c29f..d37d2eb 100644
+--- a/CatalogRule/Model/Action/Index/Refresh.php
++++ b/CatalogRule/Model/Action/Index/Refresh.php
+@@ -459,7 +459,7 @@ class Mage_CatalogRule_Model_Action_Index_Refresh
+                     )
+                 )
+             ),
+-            '@price := @price'
++            '@price'
+         );
+     }
+ 
+--
