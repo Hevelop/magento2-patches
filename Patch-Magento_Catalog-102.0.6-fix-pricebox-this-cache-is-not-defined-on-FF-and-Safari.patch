@@ -1,0 +1,20 @@
+--- a/view/base/web/js/price-box.js
++++ b/view/base/web/js/price-box.js
+@@ -33,6 +33,10 @@ define([
+         _init: function initPriceBox() {
+             var box = this.element;
+ 
++            if (typeof this.cache == "undefined") {
++                this.cache = {};
++            }
++
+             box.trigger('updatePrice');
+             this.cache.displayPrices = utils.deepClone(this.options.prices);
+         },
+@@ -43,7 +47,6 @@ define([
+         _create: function createPriceBox() {
+             var box = this.element;
+ 
+-            this.cache = {};
+             this._setDefaultsFromPriceConfig();
+             this._setDefaultsFromDataSet();
