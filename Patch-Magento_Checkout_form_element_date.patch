@@ -1,0 +1,10 @@
+--- a/Block/Checkout/AttributeMerger.php
++++ b/Block/Checkout/AttributeMerger.php
+@@ -26,6 +26,7 @@ class AttributeMerger
+      * @var array
+      */
+     protected $formElementMap = [
++        'date'        => 'Magento_Ui/js/form/element/date',
+         'checkbox'    => 'Magento_Ui/js/form/element/select',
+         'select'      => 'Magento_Ui/js/form/element/select',
+         'textarea'    => 'Magento_Ui/js/form/element/textarea',

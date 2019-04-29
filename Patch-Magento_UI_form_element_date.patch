@@ -1,0 +1,20 @@
+--- a/view/base/web/js/form/element/date.js
++++ b/view/base/web/js/form/element/date.js
+@@ -44,7 +44,7 @@ define([
+              *
+              * @type {String}
+              */
+-            outputDateFormat: 'MM/dd/y',
++            outputDateFormat: 'dd/MM/y',
+ 
+             /**
+              * Date/time format that is used to display date in
+@@ -54,7 +54,7 @@ define([
+              */
+             pickerDateTimeFormat: '',
+ 
+-            pickerDefaultDateFormat: 'MM/dd/y', // ICU Date Format
++            pickerDefaultDateFormat: 'dd/MM/y', // ICU Date Format
+             pickerDefaultTimeFormat: 'h:mm a', // ICU Time Format
+ 
+             elementTmpl: 'ui/form/element/date',
