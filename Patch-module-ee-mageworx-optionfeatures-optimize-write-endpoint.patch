@@ -1,0 +1,48 @@
+Index: Model/CollectionUpdater/Option/Description.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/Description.php	(date 1557837357000)
++++ Model/CollectionUpdater/Option/Description.php	(date 1557837399000)
+@@ -71,7 +71,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        // $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT mageworx_option_id,"
+             . " CONCAT('[',"
+Index: Model/CollectionUpdater/Value/Description.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Value/Description.php	(date 1557837357000)
++++ Model/CollectionUpdater/Value/Description.php	(date 1557837399000)
+@@ -71,7 +71,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        // $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT mageworx_option_type_id,"
+             . " CONCAT('[',"
+Index: Model/CollectionUpdater/Value/Images.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Value/Images.php	(date 1557837357000)
++++ Model/CollectionUpdater/Value/Images.php	(date 1557837399000)
+@@ -66,7 +66,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        // $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectImagesExpr = "SELECT mageworx_option_type_id,";
+         $selectImagesExpr .= " concat('[',";

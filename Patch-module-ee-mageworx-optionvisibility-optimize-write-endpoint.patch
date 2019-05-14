@@ -1,0 +1,32 @@
+Index: Model/CollectionUpdater/Option/CustomerGroup.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/CustomerGroup.php	(date 1557836816000)
++++ Model/CollectionUpdater/Option/CustomerGroup.php	(date 1557836860000)
+@@ -161,7 +161,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        //$this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT mageworx_option_id,"
+             . " CONCAT('[',"
+Index: Model/CollectionUpdater/Option/StoreView.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/StoreView.php	(date 1557836816000)
++++ Model/CollectionUpdater/Option/StoreView.php	(date 1557836860000)
+@@ -163,7 +163,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        //$this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT mageworx_option_id,"
+             . " CONCAT('[',"

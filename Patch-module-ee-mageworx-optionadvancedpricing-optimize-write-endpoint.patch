@@ -1,0 +1,32 @@
+Index: Model/CollectionUpdater/Option/Value/SpecialPrice.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/Value/SpecialPrice.php	(date 1557837175000)
++++ Model/CollectionUpdater/Option/Value/SpecialPrice.php	(date 1557837209000)
+@@ -70,7 +70,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        // $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT mageworx_option_type_id,"
+             . " CONCAT('[',"
+Index: Model/CollectionUpdater/Option/Value/TierPrice.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/Value/TierPrice.php	(date 1557837175000)
++++ Model/CollectionUpdater/Option/Value/TierPrice.php	(date 1557837209000)
+@@ -68,7 +68,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        // $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT mageworx_option_type_id,"
+             . " CONCAT('[',"
