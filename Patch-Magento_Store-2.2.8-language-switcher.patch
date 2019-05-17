@@ -37,7 +37,6 @@
 +        //it will enable proper URL rewriting during store switching.return $this->_postDataHelper->getPostData(
          return $this->_postDataHelper->getPostData(
 -            $url,
--            $url,
 +            $store->getCurrentUrl(true),
              $data
          );
