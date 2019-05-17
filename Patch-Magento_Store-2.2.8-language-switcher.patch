@@ -1,0 +1,44 @@
+--- a/Block/Switcher.php
++++ b/Block/Switcher.php
+@@ -7,6 +7,7 @@
+ /**
+  * Store and language switcher block
+  */
++
+ namespace Magento\Store\Block;
+
+ use Magento\Directory\Helper\Data;
+@@ -14,6 +15,8 @@ use Magento\Framework\App\ActionInterface;
+ use Magento\Framework\App\ObjectManager;
+ use Magento\Store\Model\Group;
+ use Magento\Framework\Url\Helper\Data as UrlHelper;
++use Magento\Store\Api\StoreResolverInterface;
++use Magento\Store\Model\Store;
+
+ /**
+  * @api
+@@ -233,18 +236,15 @@ class Switcher extends \Magento\Framework\View\Element\Template
+      * @return string
+      * @throws \Magento\Framework\Exception\NoSuchEntityException
+      */
+-    public function getTargetStorePostData(\Magento\Store\Model\Store $store, $data = [])
++    public function getTargetStorePostData(Store $store, $data = [])
+     {
+         $data[\Magento\Store\Api\StoreResolverInterface::PARAM_NAME] = $store->getCode();
+-        $data['___from_store'] = $this->_storeManager->getStore()->getCode();
+-
+-        $urlOnTargetStore = $store->getCurrentUrl(false);
+-        $data[ActionInterface::PARAM_NAME_URL_ENCODED] = $this->urlHelper->getEncodedUrl($urlOnTargetStore);
+-
+-        $url = $this->getUrl('stores/store/redirect');
++        $data[StoreResolverInterface::PARAM_NAME] = $store->getCode();
+
++        //We need to set fromStore argument as true because
++        //it will enable proper URL rewriting during store switching.return $this->_postDataHelper->getPostData(
+         return $this->_postDataHelper->getPostData(
+-            $url,
+-            $url,
++            $store->getCurrentUrl(true),
+             $data
+         );
+     }
