@@ -1,0 +1,41 @@
+--- a/Model/Indexer/AbstractAction.php
++++ b/Model/Indexer/AbstractAction.php
+@@ -805,21 +805,23 @@ abstract class AbstractAction
+             );
+         }
+ 
+-        $this->connection->query(
+-            $this->connection->insertFromSelect(
+-                $this->connection->select()->union($selects, \Magento\Framework\DB\Select::SQL_UNION_ALL),
+-                $this->getProductIndexTempTable(),
+-                [
+-                    'product_id',
+-                    'store_id',
+-                    'customer_group_id',
+-                    'grant_catalog_category_view',
+-                    'grant_catalog_product_price',
+-                    'grant_checkout_items'
+-                ],
+-                AdapterInterface::REPLACE
+-            )
+-        );
++        foreach ($selects as $select){
++            $this->connection->query(
++                $this->connection->insertFromSelect(
++                    $select,
++                    $this->getProductIndexTempTable(),
++                    [
++                        'product_id',
++                        'store_id',
++                        'customer_group_id',
++                        'grant_catalog_category_view',
++                        'grant_catalog_product_price',
++                        'grant_checkout_items'
++                    ],
++                    AdapterInterface::REPLACE
++                )
++            );
++        }
+     }
+ 
+     /**

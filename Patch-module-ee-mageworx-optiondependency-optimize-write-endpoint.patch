@@ -1,0 +1,50 @@
+Index: Model/CollectionUpdater/Option/Dependency.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/Dependency.php	(date 1557837287000)
++++ Model/CollectionUpdater/Option/Dependency.php	(date 1557837324000)
+@@ -66,7 +66,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        // $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $statement = $this->resource->getConnection()->select()
+             ->from(
+Index: Model/CollectionUpdater/Option/Value/Dependency.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/Value/Dependency.php	(date 1557837287000)
++++ Model/CollectionUpdater/Option/Value/Dependency.php	(date 1557837324000)
+@@ -66,7 +66,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        // $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $statement = $this->resource->getConnection()->select()
+             ->from(
+Index: Model/ResourceModel/CollectionUpdaterAbstract.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/ResourceModel/CollectionUpdaterAbstract.php	(date 1557837287000)
++++ Model/ResourceModel/CollectionUpdaterAbstract.php	(date 1557837324000)
+@@ -42,8 +42,8 @@
+ 
+         $this->collection
+             ->getResource()
+-            ->getConnection()
+-            ->query('SET SESSION group_concat_max_len = 100000;');
++            ->getConnection();
++            // ->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $this->collection->getSelect()->joinLeft(
+             [$alias => $table],

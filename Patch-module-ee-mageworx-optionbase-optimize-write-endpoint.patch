@@ -1,0 +1,32 @@
+Index: Model/CollectionUpdater/Option/Title.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Option/Title.php	(date 1557837229000)
++++ Model/CollectionUpdater/Option/Title.php	(date 1557837262000)
+@@ -70,7 +70,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        //$this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT " . OptionTitle::FIELD_OPTION_ID . " as "
+             . OptionTitle::FIELD_OPTION_ID_ALIAS . ","
+Index: Model/CollectionUpdater/Value/Title.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Model/CollectionUpdater/Value/Title.php	(date 1557837229000)
++++ Model/CollectionUpdater/Value/Title.php	(date 1557837262000)
+@@ -70,7 +70,7 @@
+         $entityType = $conditions['entity_type'];
+         $tableName  = $this->getTableName($entityType);
+ 
+-        $this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
++        //$this->resource->getConnection()->query('SET SESSION group_concat_max_len = 100000;');
+ 
+         $selectExpr = "SELECT " . OptionTypeTitle::FIELD_OPTION_TYPE_ID . " as "
+             . OptionTypeTitle::FIELD_OPTION_TYPE_ID_ALIAS . ","
