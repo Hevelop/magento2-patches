@@ -1,0 +1,25 @@
+diff --git a/Console/Command/ConfigSet/DefaultProcessor.php b/Console/Command/ConfigSet/DefaultProcessor.php
+index 86ae1f967..3df55f3fb 100644
+--- a/Console/Command/ConfigSet/DefaultProcessor.php
++++ b/Console/Command/ConfigSet/DefaultProcessor.php
+@@ -3,6 +3,7 @@
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
++
+ namespace Magento\Config\Console\Command\ConfigSet;
+ 
+ use Magento\Config\App\Config\Type\System;
+@@ -90,10 +91,10 @@ class DefaultProcessor implements ConfigSetProcessorInterface
+         }
+ 
+         try {
+-            $config = $this->configFactory->create([
++            $config = $this->configFactory->create(['data' => [
+                 'scope' => $scope,
+                 'scope_code' => $scopeCode,
+-            ]);
++            ]]);
+             $config->setDataByPath($path, $value);
+             $config->save();
+         } catch (\Exception $exception) {
