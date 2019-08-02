@@ -1,0 +1,17 @@
+diff --git a/Controller/Adminhtml/Product/Attribute/Save.php b/Controller/Adminhtml/Product/Attribute/Save.php
+index b9f9b73..0fd3573 100644
+--- a/Controller/Adminhtml/Product/Attribute/Save.php
++++ b/Controller/Adminhtml/Product/Attribute/Save.php
+@@ -158,7 +158,11 @@ class Save extends Attribute
+             $attributeCode = $attributeCode ?: $this->generateCode($this->getRequest()->getParam('frontend_label')[0]);
+             if (strlen($attributeCode) > 0) {
+                 $validatorAttrCode = new \Zend_Validate_Regex(
+-                    ['pattern' => '/^[a-z\x{600}-\x{6FF}][a-z\x{600}-\x{6FF}_0-9]{0,30}$/u']
++                    [
++                        'pattern' => '/^[a-z\x{600}-\x{6FF}][a-z\x{600}-\x{6FF}_0-9]{0,'
++                        . \Magento\Eav\Model\Entity\Attribute::ATTRIBUTE_CODE_MAX_LENGTH
++                        . '}$/u'
++                    ]
+                 );
+                 if (!$validatorAttrCode->isValid($attributeCode)) {
+                     $this->messageManager->addErrorMessage(
