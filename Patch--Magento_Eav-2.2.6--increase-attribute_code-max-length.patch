@@ -7,7 +7,7 @@ index a5e31c6..653eca9 100644
       * Attribute code max length
       */
 -    const ATTRIBUTE_CODE_MAX_LENGTH = 30;
-+    const ATTRIBUTE_CODE_MAX_LENGTH = 255;
++    const ATTRIBUTE_CODE_MAX_LENGTH = 64;
  
      /**
       * Attribute code min length.
