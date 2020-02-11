@@ -1,0 +1,39 @@
+diff --git a/etc/graphql/di.xml b/etc/graphql/di.xml
+new file mode 100644
+index 0000000..066a32e
+--- /dev/null
++++ b/etc/graphql/di.xml
+@@ -0,0 +1,12 @@
++<?xml version="1.0"?>
++<!--
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++-->
++<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
++    <type name="Magento\Catalog\Model\Product">
++        <plugin name="apply_catalog_rules_after_product_save_and_reindex" type="Magento\CatalogRule\Plugin\Indexer\Product\Save\ApplyRulesAfterReindex"/>
++    </type>
++</config>
+diff --git a/etc/graphql/events.xml b/etc/graphql/events.xml
+new file mode 100644
+index 0000000..0d0a1fe
+--- /dev/null
++++ b/etc/graphql/events.xml
+@@ -0,0 +1,15 @@
++<?xml version="1.0"?>
++<!--
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++-->
++<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
++    <event name="catalog_product_get_final_price">
++        <observer name="catalogrule" instance="Magento\CatalogRule\Observer\ProcessFrontFinalPriceObserver" />
++    </event>
++    <event name="prepare_catalog_product_collection_prices">
++        <observer name="catalogrule" instance="Magento\CatalogRule\Observer\PrepareCatalogProductCollectionPricesObserver" />
++    </event>
++</config>
