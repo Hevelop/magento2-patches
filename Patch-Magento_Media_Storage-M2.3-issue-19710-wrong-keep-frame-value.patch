@@ -1,0 +1,11 @@
+--- Service/ImageResize.php	2020-04-22 11:00:29.042000000 +0200
++++ Service/ImageResize.php	2020-04-22 11:02:00.454831972 +0200
+@@ -251,7 +251,7 @@
+             $images = $config->getMediaEntities('Magento_Catalog', ImageHelper::MEDIA_TYPE_CONFIG_NODE);
+             foreach ($images as $imageId => $imageData) {
+                 foreach ($stores as $store) {
+-                    $data = $this->paramsBuilder->build($imageData, (int) $store->getId());
++                    $data = $this->paramsBuilder->build($imageData, (int) $store->getId(), $theme);
+                     $uniqIndex = $this->getUniqueImageIndex($data);
+                     $data['id'] = $imageId;
+                     $viewImages[$uniqIndex] = $data;
