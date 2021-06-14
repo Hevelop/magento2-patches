@@ -1,0 +1,117 @@
+--- Cm/Cache/Backend/Redis.php
++++ Cm/Cache/Backend/Redis.php
+@@ -89,6 +89,13 @@
+      */
+     protected $_sunionChunkSize = 500;
+
++    /**
++     * Maximum number of ids to be removed at a time
++     *
++     * @var int
++     */
++    protected $_removeChunkSize = 10000;
++
+     /** @var bool */
+     protected $_useLua = false;
+
+@@ -338,6 +345,10 @@
+             $this->_sunionChunkSize = (int) $options['sunion_chunk_size'];
+         }
+
++        if ( isset($options['remove_chunk_size']) && $options['remove_chunk_size'] > 0) {
++            $this->_removeChunkSize = (int) $options['remove_chunk_size'];
++        }
++
+         if (isset($options['use_lua'])) {
+             $this->_useLua = (bool) $options['use_lua'];
+         }
+@@ -669,17 +680,20 @@
+         $ids = $this->getIdsNotMatchingTags($tags);
+         if($ids)
+         {
+-            $this->_redis->pipeline()->multi();
+-
+-            // Remove data
+-            $this->_redis->del( $this->_preprocessIds($ids));
++            $ids = array_chunk($ids, $this->_removeChunkSize);
++            foreach ($ids as $idsChunk) {
++                $this->_redis->pipeline()->multi();
++
++                // Remove data
++                $this->_redis->del($this->_preprocessIds($idsChunk));
++
++                // Remove ids from list of all ids
++                if ($this->_notMatchingTags) {
++                    $this->_redis->sRem(self::SET_IDS, $idsChunk);
++                }
+
+-            // Remove ids from list of all ids
+-            if($this->_notMatchingTags) {
+-                $this->_redis->sRem( self::SET_IDS, $ids);
++                $this->_redis->exec();
+             }
+-
+-            $this->_redis->exec();
+         }
+     }
+
+@@ -691,17 +705,24 @@
+         $ids = $this->getIdsMatchingTags($tags);
+         if($ids)
+         {
+-            $this->_redis->pipeline()->multi();
++            $ids = array_chunk($ids, $this->_removeChunkSize);
++            foreach ($ids as $idsChunk) {
++                $this->_redis->pipeline()->multi();
++
++                // Remove data
++                $this->_redis->del($this->_preprocessIds($idsChunk));
++
++                // Remove ids from list of all ids
++                if($this->_notMatchingTags) {
++                    $this->_redis->sRem( self::SET_IDS, $idsChunk);
++                }
+
+-            // Remove data
+-            $this->_redis->del( $this->_preprocessIds($ids));
++                foreach ($this->_preprocessTagIds($tags) as $tagId) {
++                    $this->_redis->sRem($tagId, $idsChunk);
++                }
+
+-            // Remove ids from list of all ids
+-            if($this->_notMatchingTags) {
+-                $this->_redis->sRem( self::SET_IDS, $ids);
++                $this->_redis->exec();
+             }
+-
+-            $this->_redis->exec();
+         }
+     }
+
+@@ -741,12 +762,21 @@
+
+         if($ids)
+         {
+-            // Remove data
+-            $this->_redis->del( $this->_preprocessIds($ids));
++            $ids = array_chunk($ids, $this->_removeChunkSize);
++            foreach ($ids as $index => $idsChunk) {
++                // Remove data
++                $this->_redis->del($this->_preprocessIds($idsChunk));
++
++                // Remove ids from list of all ids
++                if ($this->_notMatchingTags) {
++                    $this->_redis->sRem(self::SET_IDS, $idsChunk);
++                }
+
+-            // Remove ids from list of all ids
+-            if($this->_notMatchingTags) {
+-                $this->_redis->sRem( self::SET_IDS, $ids);
++                // Commit each chunk in a separate transaction
++                if (count($ids) > 1) {
++                    $this->_redis->pipeline()->exec();
++                    $this->_redis->pipeline()->multi();
++                }
+             }
+         }
+
