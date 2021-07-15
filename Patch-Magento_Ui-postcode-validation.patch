@@ -1,0 +1,28 @@
+--- a/view/base/web/js/form/element/post-code.js
++++ b/view/base/web/js/form/element/post-code.js
+@@ -19,6 +19,25 @@ define([
+                 update: '${ $.parentName }.country_id:value'
+             }
+         },
++        /**
++         * Initializes observable properties of instance
++         *
++         * @returns {Abstract} Chainable.
++         */
++        initObservable: function () {
++            this._super();
++
++            /**
++             * equalityComparer function
++             *
++             * @returns boolean.
++             */
++            this.value.equalityComparer = function (oldValue, newValue) {
++                return !oldValue && !newValue || oldValue === newValue;
++            };
++
++            return this;
++        },
+ 
+         /**
+          * @param {String} value
